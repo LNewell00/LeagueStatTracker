@@ -15,6 +15,14 @@ interface ItemTooltipProps {
   isTrinket?: boolean;
 }
 
+interface TooltipCoords {
+  placement: "above" | "below";
+  left: number;
+  top?: number;
+  bottom?: number;
+  maxHeight: number;
+}
+
 export const ItemTooltip: React.FC<ItemTooltipProps> = ({
   itemId,
   size = "md",
@@ -22,9 +30,7 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [itemInfo, setItemInfo] = useState<ItemInfo | null>(() => getItemDataSync(itemId));
-  const [coords, setCoords] = useState<{ top: number; left: number; placeAbove: boolean } | null>(
-    null
-  );
+  const [coords, setCoords] = useState<TooltipCoords | null>(null);
   const anchorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,15 +51,25 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({
   const handleMouseEnter = () => {
     if (anchorRef.current) {
       const rect = anchorRef.current.getBoundingClientRect();
-      const tooltipWidth = 280;
+      const tooltipWidth = 288;
       let left = rect.left + rect.width / 2 - tooltipWidth / 2;
       // Clamp horizontally to stay completely within viewport
       left = Math.max(12, Math.min(window.innerWidth - tooltipWidth - 12, left));
 
-      // If room above (need ~200px), show above; otherwise show below
-      const placeAbove = rect.top > 200;
-      const top = placeAbove ? rect.top - 8 : rect.bottom + 8;
-      setCoords({ top, left, placeAbove });
+      const spaceAbove = rect.top;
+      const spaceBelow = window.innerHeight - rect.bottom;
+
+      // Prefer showing above if there is enough space (> 220px) and it has more or equal room
+      if (spaceAbove >= 220 || spaceAbove > spaceBelow) {
+        const bottom = window.innerHeight - rect.top + 8;
+        const maxHeight = Math.min(390, Math.max(160, rect.top - 20));
+        setCoords({ placement: "above", left, bottom, maxHeight });
+      } else {
+        const top = rect.bottom + 8;
+        const maxHeight = Math.min(390, Math.max(160, window.innerHeight - rect.bottom - 20));
+        setCoords({ placement: "below", left, top, maxHeight });
+      }
+
       setIsHovered(true);
     }
   };
@@ -111,16 +127,17 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({
           <div
             style={{
               position: "fixed",
-              top: `${coords.top}px`,
               left: `${coords.left}px`,
-              transform: coords.placeAbove ? "translateY(-100%)" : "none",
+              ...(coords.placement === "above"
+                ? { bottom: `${coords.bottom}px`, maxHeight: `${coords.maxHeight}px` }
+                : { top: `${coords.top}px`, maxHeight: `${coords.maxHeight}px` }),
               zIndex: 99999,
-              width: "280px",
+              width: "288px",
             }}
-            className="p-3.5 rounded-2xl bg-riot-darkest/95 backdrop-blur-xl border border-riot-accent/40 shadow-2xl pointer-events-none animate-in fade-in zoom-in-95 duration-150"
+            className="flex flex-col p-3 rounded-2xl bg-riot-darkest/98 backdrop-blur-2xl border border-riot-accent/40 shadow-2xl pointer-events-none animate-in fade-in zoom-in-95 duration-150 overflow-hidden"
           >
-            {/* Header with Name and Cost */}
-            <div className="flex items-start justify-between gap-2 border-b border-riot-border/60 pb-2">
+            {/* Header with Name and Cost (Shrink-0 so it's never cut off) */}
+            <div className="flex items-start justify-between gap-2 border-b border-riot-border/60 pb-2 shrink-0">
               <div>
                 <h4 className="text-xs font-bold text-slate-100 leading-tight">
                   {itemInfo?.name || `Item #${itemId}`}
@@ -140,20 +157,20 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({
               )}
             </div>
 
-            {/* Body Description / Stats */}
+            {/* Body Description / Stats (Scrolls internally if text is long) */}
             {formattedDesc ? (
-              <div className="mt-2 text-[11px] text-slate-300 leading-relaxed font-sans whitespace-pre-line max-h-56 overflow-y-auto custom-scrollbar">
+              <div className="mt-2 text-[11px] text-slate-300 leading-relaxed font-sans whitespace-pre-line overflow-y-auto custom-scrollbar flex-1 pr-1.5">
                 {formattedDesc}
               </div>
             ) : (
-              <p className="mt-2 text-[10px] text-slate-500 italic">
+              <p className="mt-2 text-[10px] text-slate-500 italic shrink-0">
                 Loading item details...
               </p>
             )}
 
-            {/* Sell Value */}
+            {/* Sell Value (Shrink-0 pinned to footer) */}
             {itemInfo?.gold?.sell ? (
-              <div className="mt-2 pt-1.5 border-t border-riot-border/40 flex justify-between items-center text-[10px] font-mono text-slate-400">
+              <div className="mt-2 pt-1.5 border-t border-riot-border/40 flex justify-between items-center text-[10px] font-mono text-slate-400 shrink-0">
                 <span>Sell Value:</span>
                 <span className="text-amber-300 font-semibold">
                   {itemInfo.gold.sell.toLocaleString()}g

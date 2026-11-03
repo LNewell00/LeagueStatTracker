@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, Settings, RefreshCw, Radio, ShieldAlert } from "lucide-react";
 import { SUPPORTED_REGIONS } from "../types/riot";
 
@@ -28,6 +28,12 @@ export const Header: React.FC<HeaderProps> = ({
   const [inputRiotId, setInputRiotId] = useState(`${gameName}#${tagLine}`);
   const [selectedRegion, setSelectedRegion] = useState(region?.toLowerCase() || "na");
   const [selectedCount, setSelectedCount] = useState<number>(matchCount);
+
+  useEffect(() => {
+    if (gameName && tagLine) {
+      setInputRiotId(`${gameName}#${tagLine}`);
+    }
+  }, [gameName, tagLine]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +69,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Search Bar & Region Picker */}
         <form onSubmit={handleSubmit} className="flex flex-wrap md:flex-nowrap items-center gap-2.5 w-full md:w-auto flex-1 max-w-2xl xl:max-w-3xl">
-          <div className="relative flex-1 min-w-[220px] sm:min-w-[260px]">
+          <div className="relative flex-1 min-w-[240px] sm:min-w-[300px] xl:min-w-[340px]">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
               <Search className="w-4 h-4" />
             </div>

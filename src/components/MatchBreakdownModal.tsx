@@ -132,12 +132,14 @@ export const MatchBreakdownModal: React.FC<MatchBreakdownModalProps> = ({
   useEffect(() => {
     if (match) {
       loadTimeline(match);
-      // Auto-heal if cached match lacked physical damage breakdown
-      if (
-        match.targetParticipant.physicalDamageDealtToChampions === undefined &&
-        apiKey &&
-        regionalRouting
-      ) {
+      // Auto-heal if cached match lacked physical damage breakdown or objective data
+      const lacksExtendedTelemetry =
+        match.targetParticipant.physicalDamageDealtToChampions === undefined ||
+        (match.targetParticipant.physicalDamageDealtToChampions === 0 &&
+          match.targetParticipant.magicDamageDealtToChampions === 0 &&
+          match.targetParticipant.totalDamageDealtToChampions > 0);
+
+      if (lacksExtendedTelemetry && apiKey && regionalRouting) {
         refreshMatchDetailData(match);
       }
     }
@@ -637,17 +639,25 @@ export const MatchBreakdownModal: React.FC<MatchBreakdownModalProps> = ({
                 </div>
 
                 {isLegacyDamageMissing ? (
-                  <div className="py-2 px-3 rounded-xl bg-riot-surface/80 border border-riot-border text-xs text-slate-300 flex items-center justify-between">
-                    <span>
-                      Legacy cached match: physical/magic/true split not captured in older save.
+                  <div className="py-2.5 px-3.5 rounded-xl bg-riot-surface/80 border border-riot-border text-xs text-slate-300 flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-2">
+                      {isRefreshingMatch ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-riot-accent shrink-0" />
+                          <span>Fetching updated damage split and objective stats from Riot API...</span>
+                        </>
+                      ) : (
+                        <span>
+                          Legacy cached match: physical/magic/true split not captured in older save.
+                        </span>
+                      )}
                     </span>
-                    {apiKey && regionalRouting && (
+                    {!isRefreshingMatch && apiKey && regionalRouting && (
                       <button
                         onClick={() => refreshMatchDetailData(match)}
-                        disabled={isRefreshingMatch}
-                        className="px-2.5 py-1 rounded-lg bg-riot-accent/20 border border-riot-accent/40 text-riot-accent font-bold hover:bg-riot-accent hover:text-white transition-all"
+                        className="px-2.5 py-1 rounded-lg bg-riot-accent/20 border border-riot-accent/40 text-riot-accent font-bold hover:bg-riot-accent hover:text-white transition-all shrink-0"
                       >
-                        {isRefreshingMatch ? "Fetching..." : "Fetch Split"}
+                        Fetch Split
                       </button>
                     )}
                   </div>

@@ -6,6 +6,8 @@ import { MmrGraph } from "./components/MmrGraph";
 import { LiveGameCard } from "./components/LiveGameCard";
 import { MatchHistoryTable } from "./components/MatchHistoryTable";
 import { DuoSynergyTab } from "./components/DuoSynergyTab";
+import { ChampionPoolTab } from "./components/ChampionPoolTab";
+import { ItemBuildPlannerTab } from "./components/ItemBuildPlannerTab";
 import { MatchBreakdownModal } from "./components/MatchBreakdownModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { ParsedMatch, PlayerStatsSummary, RankedEntry, MmrDataPoint } from "./types/riot";
@@ -29,6 +31,7 @@ import {
   loadMatchesFromCache,
   AppPreferences,
 } from "./services/storage";
+import { loadChampionPool, loadCustomBuilds } from "./services/buildsStorage";
 import { initDDragonVersion } from "./services/ddragon";
 import { MOCK_MATCHES, MOCK_SUMMARY } from "./services/mockData";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
@@ -38,6 +41,7 @@ export const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("matches");
   const [selectedBreakdownMatch, setSelectedBreakdownMatch] = useState<ParsedMatch | null>(null);
+  const [selectedBuildChamp, setSelectedBuildChamp] = useState<string>("Caitlyn");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [activeAccount, setActiveAccount] = useState<{
@@ -465,6 +469,8 @@ export const App: React.FC = () => {
           matchesCount={matches.length}
           isLiveActive={liveState.isActive}
           duosCount={duosCount}
+          poolCount={loadChampionPool().length}
+          buildsCount={loadCustomBuilds().length}
         />
 
         {/* Status notification toast/banner */}
@@ -533,7 +539,27 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 4: Live Client */}
+        {/* Tab 4: Champion Pool */}
+        {activeTab === "champions" && (
+          <div className="animate-in fade-in">
+            <ChampionPoolTab
+              matches={matches}
+              onNavigateToBuilds={(champ) => {
+                setSelectedBuildChamp(champ);
+                setActiveTab("builds");
+              }}
+            />
+          </div>
+        )}
+
+        {/* Tab 5: Situational Item & Build Planner */}
+        {activeTab === "builds" && (
+          <div className="animate-in fade-in">
+            <ItemBuildPlannerTab initialChampion={selectedBuildChamp} />
+          </div>
+        )}
+
+        {/* Tab 6: Live Client */}
         {activeTab === "live" && (
           <div className="space-y-6 animate-in fade-in">
             <LiveGameCard

@@ -13,21 +13,50 @@
 }
 
 /* Custom Sleek Scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #433177 rgba(15, 11, 31, 0.7);
+}
+
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(15, 11, 31, 0.6);
+  background: rgba(15, 11, 31, 0.7);
   border-radius: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #362669;
+  background: #433177;
   border-radius: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #ec4899;
+}
+
+/* Global scrollbar fallback so Windows native white scrollbar never appears */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #31235c rgba(15, 11, 31, 0.4);
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(15, 11, 31, 0.4);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #31235c;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
   background: #ec4899;
 }

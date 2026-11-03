@@ -127,3 +127,38 @@ export function formatItemDescription(raw: string): string {
     .trim();
 }
 
+export interface ChampionBasicInfo {
+  id: string;
+  name: string;
+  title: string;
+  tags: string[];
+}
+
+let championsCache: ChampionBasicInfo[] | null = null;
+
+export async function fetchAllChampions(): Promise<ChampionBasicInfo[]> {
+  if (championsCache) return championsCache;
+  try {
+    const res = await fetch(
+      `https://ddragon.leagueoflegends.com/cdn/${currentPatchVersion}/data/en_US/champion.json`
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data.data) {
+        championsCache = Object.values(data.data)
+          .map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            title: c.title,
+            tags: c.tags || [],
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        return championsCache;
+      }
+    }
+  } catch (err) {
+    console.warn("Failed to fetch champions from DataDragon", err);
+  }
+  return [];
+}
+

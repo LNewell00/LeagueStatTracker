@@ -1,7 +1,7 @@
 import React from "react";
-import { History, TrendingUp, Users, Radio } from "lucide-react";
+import { History, TrendingUp, Users, Radio, Shield, Package } from "lucide-react";
 
-export type TabType = "matches" | "mmr" | "synergy" | "live";
+export type TabType = "matches" | "mmr" | "synergy" | "champions" | "builds" | "live";
 
 interface NavigationTabsProps {
   activeTab: TabType;
@@ -9,6 +9,8 @@ interface NavigationTabsProps {
   matchesCount: number;
   isLiveActive: boolean;
   duosCount?: number;
+  poolCount?: number;
+  buildsCount?: number;
 }
 
 export const NavigationTabs: React.FC<NavigationTabsProps> = ({
@@ -17,8 +19,16 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
   matchesCount,
   isLiveActive,
   duosCount = 0,
+  poolCount = 0,
+  buildsCount = 0,
 }) => {
-  const tabs: { id: TabType; label: string; icon: React.ReactNode; badge?: string | number; livePulse?: boolean }[] = [
+  const tabs: {
+    id: TabType;
+    label: string;
+    icon: React.ReactNode;
+    badge?: string | number;
+    livePulse?: boolean;
+  }[] = [
     {
       id: "matches",
       label: "Matches & Overview",
@@ -35,6 +45,18 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
       label: "Duo & Synergy",
       icon: <Users className="w-4 h-4" />,
       badge: duosCount > 0 ? `${duosCount} duos` : undefined,
+    },
+    {
+      id: "champions",
+      label: "Champion Pool",
+      icon: <Shield className="w-4 h-4" />,
+      badge: poolCount > 0 ? poolCount : undefined,
+    },
+    {
+      id: "builds",
+      label: "Build & Item Planner",
+      icon: <Package className="w-4 h-4" />,
+      badge: buildsCount > 0 ? `${buildsCount} builds` : undefined,
     },
     {
       id: "live",
