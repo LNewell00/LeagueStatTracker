@@ -1,13 +1,14 @@
 import React from "react";
-import { History, TrendingUp, Users, Radio, Shield, Package } from "lucide-react";
+import { History, TrendingUp, Users, Radio, Shield, Package, Video } from "lucide-react";
 
-export type TabType = "matches" | "mmr" | "synergy" | "champions" | "builds" | "live";
+export type TabType = "matches" | "mmr" | "synergy" | "champions" | "builds" | "live" | "recording";
 
 interface NavigationTabsProps {
   activeTab: TabType;
   onSelectTab: (tab: TabType) => void;
   matchesCount: number;
   isLiveActive: boolean;
+  isRecording?: boolean;
   duosCount?: number;
   poolCount?: number;
   buildsCount?: number;
@@ -18,6 +19,7 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
   onSelectTab,
   matchesCount,
   isLiveActive,
+  isRecording = false,
   duosCount = 0,
   poolCount = 0,
   buildsCount = 0,
@@ -64,6 +66,13 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
       icon: <Radio className="w-4 h-4" />,
       badge: isLiveActive ? "LIVE" : undefined,
       liveDot: isLiveActive,
+    },
+    {
+      id: "recording",
+      label: "VOD & Recordings",
+      icon: <Video className="w-4 h-4" />,
+      badge: isRecording ? "REC" : undefined,
+      liveDot: isRecording,
     },
   ];
 
