@@ -438,7 +438,7 @@ export const App: React.FC = () => {
           counts.set(key, (counts.get(key) || 0) + 1);
         });
     });
-    return Array.from(counts.values()).filter((c) => c >= 2).length;
+    return Array.from(counts.values()).filter((c) => c >= 5).length;
   }, [matches]);
 
   return (

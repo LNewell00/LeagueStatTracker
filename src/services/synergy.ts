@@ -168,11 +168,11 @@ export function computeTeammateSynergies(
       mostPlayedChampion: mostPlayedChamp,
       topCombos: combos,
       lastPlayed: rec.lastPlayed,
-      isFrequentDuo: totalGames >= 2,
+      isFrequentDuo: totalGames >= 5,
     };
   });
 
-  // Sort teammates: Duos (>=2 games) first, then by games together descending, then winRate
+  // Sort teammates: Duos (>=5 games) first, then by games together descending, then winRate
   teammates.sort((a, b) => {
     if (a.isFrequentDuo !== b.isFrequentDuo) {
       return a.isFrequentDuo ? -1 : 1;

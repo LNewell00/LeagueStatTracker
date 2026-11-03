@@ -24,15 +24,24 @@ export const DuoSynergyTab: React.FC<DuoSynergyTabProps> = ({
   targetPuuid,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterMode, setFilterMode] = useState<"ALL" | "DUOS">("ALL");
+  const [filterMode, setFilterMode] = useState<"5_PLUS" | "3_PLUS" | "ALL">("5_PLUS");
 
   const synergyStats = useMemo(() => {
     return computeTeammateSynergies(matches, targetPuuid);
   }, [matches, targetPuuid]);
 
+  const duos5PlusCount = useMemo(() => {
+    return synergyStats.teammates.filter((t) => t.gamesTogether >= 5).length;
+  }, [synergyStats.teammates]);
+
+  const duos3PlusCount = useMemo(() => {
+    return synergyStats.teammates.filter((t) => t.gamesTogether >= 3).length;
+  }, [synergyStats.teammates]);
+
   const filteredTeammates = useMemo(() => {
     return synergyStats.teammates.filter((t) => {
-      if (filterMode === "DUOS" && !t.isFrequentDuo) return false;
+      if (filterMode === "5_PLUS" && t.gamesTogether < 5) return false;
+      if (filterMode === "3_PLUS" && t.gamesTogether < 3) return false;
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         return (
@@ -76,9 +85,9 @@ export const DuoSynergyTab: React.FC<DuoSynergyTabProps> = ({
               </div>
             </div>
             <div className="bg-riot-darkest/70 rounded-xl p-2.5 border border-riot-border/60">
-              <div className="text-[10px] uppercase font-bold text-pink-400">Frequent Duos</div>
+              <div className="text-[10px] uppercase font-bold text-pink-400">5+ Game Duos</div>
               <div className="text-xl font-black text-pink-300 font-mono">
-                {synergyStats.frequentDuosCount}
+                {duos5PlusCount}
               </div>
             </div>
           </div>
@@ -180,6 +189,27 @@ export const DuoSynergyTab: React.FC<DuoSynergyTabProps> = ({
         {/* Filter Toggle */}
         <div className="flex items-center gap-1.5 bg-riot-darkest p-1 rounded-xl border border-riot-border text-xs font-semibold w-full sm:w-auto justify-center">
           <button
+            onClick={() => setFilterMode("5_PLUS")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+              filterMode === "5_PLUS"
+                ? "bg-pink-500/20 text-pink-300 border border-pink-500/40 shadow-neon-pink font-bold"
+                : "text-slate-400 hover:text-pink-300"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+            <span>5+ Games ({duos5PlusCount})</span>
+          </button>
+          <button
+            onClick={() => setFilterMode("3_PLUS")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              filterMode === "3_PLUS"
+                ? "bg-riot-surface text-slate-100 border border-riot-border shadow-sm font-bold"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            3+ Games ({duos3PlusCount})
+          </button>
+          <button
             onClick={() => setFilterMode("ALL")}
             className={`px-3 py-1.5 rounded-lg transition-all ${
               filterMode === "ALL"
@@ -187,29 +217,24 @@ export const DuoSynergyTab: React.FC<DuoSynergyTabProps> = ({
                 : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            All Teammates ({synergyStats.teammates.length})
-          </button>
-          <button
-            onClick={() => setFilterMode("DUOS")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
-              filterMode === "DUOS"
-                ? "bg-pink-500/20 text-pink-300 border border-pink-500/40 shadow-neon-pink font-bold"
-                : "text-slate-400 hover:text-pink-300"
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-pink-400" />
-            <span>Frequent Duos ({synergyStats.frequentDuosCount})</span>
+            All Partners ({synergyStats.teammates.length})
           </button>
         </div>
       </div>
 
       {/* Teammates Cards Grid */}
       {filteredTeammates.length === 0 ? (
-        <div className="py-16 text-center border border-dashed border-riot-border rounded-2xl bg-riot-card/30">
+        <div className="py-16 text-center border border-dashed border-riot-border rounded-2xl bg-riot-card/30 p-6">
           <Users className="w-10 h-10 text-slate-600 mx-auto mb-2" />
-          <p className="text-sm font-bold text-slate-300">No teammates match your filter</p>
-          <p className="text-xs text-slate-500 mt-1">
-            Try switching filters or pulling more games to expand synergy records.
+          <p className="text-sm font-bold text-slate-300">
+            {filterMode === "5_PLUS"
+              ? "No teammates with 5+ games found in these matches"
+              : "No teammates match your search"}
+          </p>
+          <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+            {filterMode === "5_PLUS"
+              ? "Tip: Switch to '3+ Games' or 'All Partners' above, or increase your match count (to 30, 40, or 50) in the top bar to analyze more games together."
+              : "Try adjusting your search query or reset filters."}
           </p>
         </div>
       ) : (
