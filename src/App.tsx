@@ -173,14 +173,42 @@ export const App: React.FC = () => {
           return;
         }
 
-        // 3. Fetch details for each match with rate-limit friendly batch pacing
+        // 3. Smart Cache Lookup: Check what's already cached locally to save rate-limits & time
+        const cachedMap = new Map<string, ParsedMatch>();
+        matches.forEach((m) => cachedMap.set(m.matchId, m));
+        const persisted = await loadMatchesFromCache();
+        persisted.forEach((m) => cachedMap.set(m.matchId, m));
+
+        const missingIds = matchIds.filter((id) => !cachedMap.has(id));
+
+        // 4. If all matches are already cached, load them instantly with zero network overhead!
+        if (missingIds.length === 0) {
+          const resolvedMatches = matchIds
+            .map((id) => cachedMap.get(id))
+            .filter((m): m is ParsedMatch => m !== undefined);
+
+          setMatches(resolvedMatches);
+          setSummary(computeSummaryStats(resolvedMatches));
+          setMmrDataPoints(
+            calculateMmrProgression(resolvedMatches, currentSoloRank || rankedEntry || undefined)
+          );
+
+          setStatusMessage({
+            type: "success",
+            text: `Loaded all ${resolvedMatches.length} matches instantly from local cache (0 API calls)!`,
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        // 5. Fetch ONLY missing matches with rate-limit friendly batch pacing
         setStatusMessage({
           type: "info",
-          text: `Fetching ${matchIds.length} match details (0/${matchIds.length})...`,
+          text: `Found ${matchIds.length - missingIds.length} matches in local cache. Fetching ${missingIds.length} new matches from Riot servers...`,
         });
 
-        const results = await batchFetchMatches(
-          matchIds,
+        const newResults = await batchFetchMatches(
+          missingIds,
           async (mId) => {
             try {
               const raw = await fetchMatchDetail(mId, regionalRouting, preferences.apiKey);
@@ -194,25 +222,34 @@ export const App: React.FC = () => {
           (completed, total) => {
             setStatusMessage({
               type: "info",
-              text: `Fetching ${total} match details (${completed}/${total})...`,
+              text: `Fetching new match details (${completed}/${total})...`,
             });
           }
         );
 
-        const validMatches = results.filter((m): m is ParsedMatch => m !== null);
+        newResults.forEach((m) => {
+          if (m) cachedMap.set(m.matchId, m);
+        });
 
-        if (validMatches.length > 0) {
-          setMatches(validMatches);
-          const computed = computeSummaryStats(validMatches);
+        const resolvedMatches = matchIds
+          .map((id) => cachedMap.get(id))
+          .filter((m): m is ParsedMatch => m !== undefined);
+
+        if (resolvedMatches.length > 0) {
+          setMatches(resolvedMatches);
+          const computed = computeSummaryStats(resolvedMatches);
           setSummary(computed);
           setMmrDataPoints(
-            calculateMmrProgression(validMatches, currentSoloRank || rankedEntry || undefined)
+            calculateMmrProgression(resolvedMatches, currentSoloRank || rankedEntry || undefined)
           );
-          await saveMatchesToCache(validMatches);
+
+          // Save combined cache so we retain all matches (both current and previously cached)
+          const allCachedMatches = Array.from(cachedMap.values());
+          await saveMatchesToCache(allCachedMatches);
 
           setStatusMessage({
             type: "success",
-            text: `Successfully fetched and cached ${validMatches.length} matches!`,
+            text: `Successfully synced! Showing ${resolvedMatches.length} matches (${missingIds.length} new fetched, ${matchIds.length - missingIds.length} from cache).`,
           });
         } else {
           setStatusMessage({
@@ -293,40 +330,57 @@ export const App: React.FC = () => {
         return;
       }
 
-      const results = await batchFetchMatches(
-        uniqueNewIds,
-        async (mId) => {
-          try {
-            const raw = await fetchMatchDetail(mId, targetAccount!.regionalRouting, preferences.apiKey);
-            return parseRawMatch(raw, targetAccount!.puuid);
-          } catch {
-            return null;
+      // Check persistent cache first for any matches already retrieved previously
+      const cachedMap = new Map<string, ParsedMatch>();
+      const persisted = await loadMatchesFromCache();
+      persisted.forEach((m) => cachedMap.set(m.matchId, m));
+
+      const missingBatchIds = uniqueNewIds.filter((id) => !cachedMap.has(id));
+
+      if (missingBatchIds.length > 0) {
+        const results = await batchFetchMatches(
+          missingBatchIds,
+          async (mId) => {
+            try {
+              const raw = await fetchMatchDetail(mId, targetAccount!.regionalRouting, preferences.apiKey);
+              return parseRawMatch(raw, targetAccount!.puuid);
+            } catch {
+              return null;
+            }
+          },
+          5,
+          100,
+          (done, total) => {
+            setStatusMessage({
+              type: "info",
+              text: `Pulling older matches (${done}/${total})...`,
+            });
           }
-        },
-        5,
-        100,
-        (done, total) => {
-          setStatusMessage({
-            type: "info",
-            text: `Pulling older matches (${done}/${total})...`,
-          });
-        }
-      );
+        );
 
-      const newValid = results.filter((m): m is ParsedMatch => m !== null);
+        results.forEach((m) => {
+          if (m) cachedMap.set(m.matchId, m);
+        });
+      }
 
-      if (newValid.length > 0) {
-        const combined = [...matches, ...newValid];
+      const newlyAdded = uniqueNewIds
+        .map((id) => cachedMap.get(id))
+        .filter((m): m is ParsedMatch => m !== undefined);
+
+      if (newlyAdded.length > 0) {
+        const combined = [...matches, ...newlyAdded];
         setMatches(combined);
         setSummary(computeSummaryStats(combined));
         setMmrDataPoints(
           calculateMmrProgression(combined, rankedEntry || undefined)
         );
-        await saveMatchesToCache(combined);
+
+        // Keep all matches cached
+        await saveMatchesToCache(Array.from(cachedMap.values()));
 
         setStatusMessage({
           type: "success",
-          text: `Added ${newValid.length} older matches! Now tracking ${combined.length} total games.`,
+          text: `Added ${newlyAdded.length} older matches (${missingBatchIds.length} downloaded, ${newlyAdded.length - missingBatchIds.length} from cache)! Now tracking ${combined.length} total games.`,
         });
       } else {
         setStatusMessage({
