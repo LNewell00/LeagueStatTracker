@@ -12,13 +12,15 @@ import {
   ChevronUp,
   Coins,
   Crown,
+  Sparkles,
 } from "lucide-react";
 
 interface MatchRowProps {
   match: ParsedMatch;
+  onOpenBreakdown?: (match: ParsedMatch) => void;
 }
 
-export const MatchRow: React.FC<MatchRowProps> = ({ match }) => {
+export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const p = match.targetParticipant;
   const isWin = p.win;
@@ -262,13 +264,29 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match }) => {
           </div>
         )}
 
-        {/* Section 7: Expand / Collapse Button */}
-        <div className="flex items-center text-slate-400 hover:text-riot-accent transition-all pl-2">
-          {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-riot-accent" />
-          ) : (
-            <ChevronDown className="w-5 h-5 group-hover:text-slate-200" />
+        {/* Section 7: Breakdown Button & Expand/Collapse */}
+        <div className="flex items-center gap-2 pl-2">
+          {onOpenBreakdown && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenBreakdown(match);
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-riot-accent/15 hover:bg-riot-accent/30 border border-riot-accent/40 text-riot-accent text-[11px] font-bold tracking-wide transition-all shadow-sm active:scale-95 shrink-0"
+              title="Open full match breakdown"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Full Breakdown</span>
+            </button>
           )}
+
+          <div className="text-slate-400 hover:text-riot-accent transition-all">
+            {isExpanded ? (
+              <ChevronUp className="w-5 h-5 text-riot-accent" />
+            ) : (
+              <ChevronDown className="w-5 h-5 group-hover:text-slate-200" />
+            )}
+          </div>
         </div>
       </div>
 

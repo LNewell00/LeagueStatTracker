@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Header } from "./components/Header";
+import { NavigationTabs, TabType } from "./components/NavigationTabs";
 import { StatsOverview } from "./components/StatsOverview";
 import { MmrGraph } from "./components/MmrGraph";
 import { LiveGameCard } from "./components/LiveGameCard";
 import { MatchHistoryTable } from "./components/MatchHistoryTable";
+import { DuoSynergyTab } from "./components/DuoSynergyTab";
+import { MatchBreakdownModal } from "./components/MatchBreakdownModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { ParsedMatch, PlayerStatsSummary, RankedEntry, MmrDataPoint } from "./types/riot";
 import { LivePollerState } from "./types/live";
@@ -33,6 +36,8 @@ import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 export const App: React.FC = () => {
   const [preferences, setPreferences] = useState<AppPreferences>(loadPreferences);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>("matches");
+  const [selectedBreakdownMatch, setSelectedBreakdownMatch] = useState<ParsedMatch | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [activeAccount, setActiveAccount] = useState<{
@@ -422,6 +427,20 @@ export const App: React.FC = () => {
     setStatusMessage({ type: "info", text: "Match cache cleared successfully." });
   };
 
+  const duosCount = useMemo(() => {
+    const counts = new Map<string, number>();
+    matches.forEach((m) => {
+      const targetTeam = m.targetParticipant?.teamId;
+      m.allParticipants
+        ?.filter((p) => p.teamId === targetTeam && p.puuid !== m.targetParticipant?.puuid)
+        .forEach((t) => {
+          const key = t.puuid || t.riotIdGameName || t.summonerName;
+          counts.set(key, (counts.get(key) || 0) + 1);
+        });
+    });
+    return Array.from(counts.values()).filter((c) => c >= 2).length;
+  }, [matches]);
+
   return (
     <div className="min-h-screen flex flex-col bg-riot-darkest">
       {/* Top Header */}
@@ -439,6 +458,15 @@ export const App: React.FC = () => {
 
       {/* Main Body */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+        {/* Navigation Tabs */}
+        <NavigationTabs
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          matchesCount={matches.length}
+          isLiveActive={liveState.isActive}
+          duosCount={duosCount}
+        />
+
         {/* Status notification toast/banner */}
         {statusMessage && (
           <div
@@ -465,31 +493,65 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* 1. Summary Header */}
-        <StatsOverview
-          summary={summary}
-          summonerName={`${preferences.gameName}#${preferences.tagLine}`}
-        />
+        {/* Tab 1: Matches & Overview */}
+        {activeTab === "matches" && (
+          <div className="space-y-6 animate-in fade-in">
+            <StatsOverview
+              summary={summary}
+              summonerName={`${preferences.gameName}#${preferences.tagLine}`}
+            />
+            <MatchHistoryTable
+              matches={matches}
+              isLoading={isLoading}
+              isLoadingMore={isLoadingMore}
+              onLoadMore={handleLoadMoreMatches}
+              hasApiKey={Boolean(preferences.apiKey)}
+              onOpenBreakdown={(m) => setSelectedBreakdownMatch(m)}
+            />
+          </div>
+        )}
 
-        {/* 2. Ranked MMR Trend Graph */}
-        <MmrGraph dataPoints={mmrDataPoints} currentRank={rankedEntry} />
+        {/* Tab 2: Ranked MMR Trend & Progress */}
+        {activeTab === "mmr" && (
+          <div className="space-y-6 animate-in fade-in">
+            <MmrGraph dataPoints={mmrDataPoints} currentRank={rankedEntry} />
+            <StatsOverview
+              summary={summary}
+              summonerName={`${preferences.gameName}#${preferences.tagLine}`}
+            />
+          </div>
+        )}
 
-        {/* 3. Live Client Status Widget */}
-        <LiveGameCard
-          liveState={liveState}
-          isMockActive={isMockLiveActive}
-          onToggleMock={handleToggleMockLive}
-        />
+        {/* Tab 3: Duo & Teammate Synergy */}
+        {activeTab === "synergy" && (
+          <div className="animate-in fade-in">
+            <DuoSynergyTab
+              matches={matches}
+              targetPuuid={activeAccount?.puuid}
+              summonerName={`${preferences.gameName}#${preferences.tagLine}`}
+            />
+          </div>
+        )}
 
-        {/* 4. Recent Matches Table */}
-        <MatchHistoryTable
-          matches={matches}
-          isLoading={isLoading}
-          isLoadingMore={isLoadingMore}
-          onLoadMore={handleLoadMoreMatches}
-          hasApiKey={Boolean(preferences.apiKey)}
-        />
+        {/* Tab 4: Live Client */}
+        {activeTab === "live" && (
+          <div className="space-y-6 animate-in fade-in">
+            <LiveGameCard
+              liveState={liveState}
+              isMockActive={isMockLiveActive}
+              onToggleMock={handleToggleMockLive}
+            />
+          </div>
+        )}
       </main>
+
+      {/* Full Match Breakdown Modal */}
+      {selectedBreakdownMatch && (
+        <MatchBreakdownModal
+          match={selectedBreakdownMatch}
+          onClose={() => setSelectedBreakdownMatch(null)}
+        />
+      )}
 
       {/* Settings Modal */}
       <SettingsModal

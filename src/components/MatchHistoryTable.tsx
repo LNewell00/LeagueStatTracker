@@ -9,6 +9,7 @@ interface MatchHistoryTableProps {
   isLoadingMore?: boolean;
   onLoadMore?: () => void;
   hasApiKey?: boolean;
+  onOpenBreakdown?: (match: ParsedMatch) => void;
 }
 
 export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
@@ -17,6 +18,7 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
   isLoadingMore = false,
   onLoadMore,
   hasApiKey = false,
+  onOpenBreakdown,
 }) => {
   const [filter, setFilter] = useState<"ALL" | "WIN" | "LOSS">("ALL");
 
@@ -89,7 +91,11 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
         ) : (
           <>
             {filteredMatches.map((match) => (
-              <MatchRow key={match.matchId} match={match} />
+              <MatchRow
+                key={match.matchId}
+                match={match}
+                onOpenBreakdown={onOpenBreakdown}
+              />
             ))}
 
             {onLoadMore && hasApiKey && (

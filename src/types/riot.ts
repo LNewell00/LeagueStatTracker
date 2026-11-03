@@ -62,6 +62,21 @@ export interface MatchParticipant {
   individualPosition: string;
   turretKills: number;
   teamId: number;
+  // Extended combat & utility metrics
+  physicalDamageDealtToChampions?: number;
+  magicDamageDealtToChampions?: number;
+  trueDamageDealtToChampions?: number;
+  damageDealtToObjectives?: number;
+  damageDealtToTurrets?: number;
+  totalHealsOnTeammates?: number;
+  totalDamageShieldedOnTeammates?: number;
+  timeCCingOthers?: number;
+  doubleKills?: number;
+  tripleKills?: number;
+  quadraKills?: number;
+  pentaKills?: number;
+  firstBloodKill?: boolean;
+  firstBloodAssist?: boolean;
 }
 
 export interface MatchTeamStats {

@@ -219,6 +219,21 @@ export function parseRawMatch(raw: any, targetPuuid: string): ParsedMatch | null
         individualPosition: p.individualPosition || p.teamPosition || "",
         turretKills: p.turretKills || 0,
         teamId: p.teamId,
+        // Extended metrics
+        physicalDamageDealtToChampions: p.physicalDamageDealtToChampions || 0,
+        magicDamageDealtToChampions: p.magicDamageDealtToChampions || 0,
+        trueDamageDealtToChampions: p.trueDamageDealtToChampions || 0,
+        damageDealtToObjectives: p.damageDealtToObjectives || 0,
+        damageDealtToTurrets: p.damageDealtToTurrets || 0,
+        totalHealsOnTeammates: p.totalHealsOnTeammates || 0,
+        totalDamageShieldedOnTeammates: p.totalDamageShieldedOnTeammates || 0,
+        timeCCingOthers: p.timeCCingOthers || 0,
+        doubleKills: p.doubleKills || 0,
+        tripleKills: p.tripleKills || 0,
+        quadraKills: p.quadraKills || 0,
+        pentaKills: p.pentaKills || 0,
+        firstBloodKill: !!p.firstBloodKill,
+        firstBloodAssist: !!p.firstBloodAssist,
       };
     });
 
