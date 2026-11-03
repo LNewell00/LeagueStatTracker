@@ -55,15 +55,9 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="absolute -bottom-1 -right-1 text-[11px]" title="Musical Star">✨</span>
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-black tracking-wider text-slate-100 uppercase">
-                League<span className="text-riot-accent">Tracker</span>
-              </h1>
-              <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-gradient-to-r from-pink-500/20 to-indigo-500/20 text-pink-300 border border-pink-500/30">
-                Seraphine & Yuumi
-              </span>
-            </div>
-            <p className="text-xs text-slate-400">Cosmic Tracker • Match V5 & Live Engine</p>
+            <h1 className="text-xl font-black tracking-wider text-slate-100 uppercase">
+              League<span className="text-riot-accent">Tracker</span>
+            </h1>
           </div>
         </div>
 

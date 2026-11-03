@@ -3,7 +3,6 @@ import { ParsedMatch, MatchParticipant } from "../types/riot";
 import { ParsedTimeline } from "../types/timeline";
 import {
   getChampionIconUrl,
-  getItemIconUrl,
   getSummonerSpellIconUrl,
 } from "../services/ddragon";
 import {
@@ -17,6 +16,7 @@ import { generateFallbackTimeline } from "../services/timelineFallback";
 import { GoldLeadGraph } from "./timeline/GoldLeadGraph";
 import { SkillOrderView } from "./timeline/SkillOrderView";
 import { KillMap } from "./timeline/KillMap";
+import { ItemTooltip } from "./ItemTooltip";
 import {
   X,
   Trophy,
@@ -321,30 +321,12 @@ export const MatchBreakdownModal: React.FC<MatchBreakdownModalProps> = ({
 
                     {/* Items */}
                     <td className="py-2 px-2.5">
-                      <div className="flex items-center gap-0.5">
+                      <div className="flex items-center gap-1">
                         {items.map((it, idx) => (
-                          <div
-                            key={idx}
-                            className="w-5 h-5 rounded bg-riot-darkest/90 border border-riot-border/70 overflow-hidden shrink-0"
-                          >
-                            {it > 0 && (
-                              <img
-                                src={getItemIconUrl(it)}
-                                alt={`Item ${it}`}
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                          </div>
+                          <ItemTooltip key={idx} itemId={it} size="xs" />
                         ))}
-                        {/* Trinket */}
-                        <div className="w-5 h-5 rounded-full bg-riot-darkest/90 border border-riot-gold/40 overflow-hidden shrink-0 ml-1">
-                          {p.item6 > 0 && (
-                            <img
-                              src={getItemIconUrl(p.item6)}
-                              alt="Trinket"
-                              className="w-full h-full object-cover"
-                            />
-                          )}
+                        <div className="ml-0.5">
+                          <ItemTooltip itemId={p.item6} size="xs" isTrinket />
                         </div>
                       </div>
                     </td>

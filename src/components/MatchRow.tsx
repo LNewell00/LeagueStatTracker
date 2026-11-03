@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import { ParsedMatch, MatchParticipant } from "../types/riot";
 import {
   getChampionIconUrl,
-  getItemIconUrl,
   getSummonerSpellIconUrl,
 } from "../services/ddragon";
+import { ItemTooltip } from "./ItemTooltip";
 import {
   Eye,
   Flame,
@@ -77,7 +77,7 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
       {/* Main Collapsed Card */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="relative p-4 pl-5 flex flex-col xl:flex-row items-center justify-between gap-4 cursor-pointer hover:bg-slate-800/30 transition-all select-none"
+        className="relative px-5 py-3.5 flex flex-col xl:flex-row items-center justify-between gap-4 cursor-pointer hover:bg-slate-800/30 transition-all select-none"
       >
         {/* Accent side stripe */}
         <div
@@ -171,35 +171,10 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
         {/* Section 4: Items Grid */}
         <div className="flex items-center gap-1.5 w-full xl:w-auto">
           {items.map((itemId, idx) => (
-            <div
-              key={idx}
-              className="w-8 h-8 rounded-lg bg-riot-darkest border border-riot-border/70 overflow-hidden flex items-center justify-center"
-            >
-              {itemId > 0 ? (
-                <img
-                  src={getItemIconUrl(itemId)}
-                  alt={`Item ${itemId}`}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
-              )}
-            </div>
+            <ItemTooltip key={idx} itemId={itemId} size="md" />
           ))}
-
-          {/* Trinket */}
-          <div className="w-8 h-8 rounded-lg bg-riot-darkest border border-riot-border/70 overflow-hidden flex items-center justify-center ml-1">
-            {p.item6 > 0 ? (
-              <img
-                src={getItemIconUrl(p.item6)}
-                alt="Trinket"
-                className="w-full h-full object-cover rounded"
-                loading="lazy"
-              />
-            ) : (
-              <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
-            )}
+          <div className="ml-1">
+            <ItemTooltip itemId={p.item6} size="md" isTrinket />
           </div>
         </div>
 
@@ -265,26 +240,29 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
         )}
 
         {/* Section 7: Breakdown Button & Expand/Collapse */}
-        <div className="flex items-center gap-2 pl-2">
+        <div className="flex items-center gap-3 shrink-0 ml-auto xl:ml-0 pr-1">
           {onOpenBreakdown && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenBreakdown(match);
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-riot-accent/15 hover:bg-riot-accent/30 border border-riot-accent/40 text-riot-accent text-[11px] font-bold tracking-wide transition-all shadow-sm active:scale-95 shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-riot-accent/15 hover:bg-riot-accent/30 border border-riot-accent/40 text-riot-accent text-xs font-bold tracking-wide transition-all shadow-sm active:scale-95 shrink-0"
               title="Open full match breakdown"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Full Breakdown</span>
+              <span>Full Breakdown</span>
             </button>
           )}
 
-          <div className="text-slate-400 hover:text-riot-accent transition-all">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center bg-riot-darkest/70 border border-riot-border/60 text-slate-400 hover:text-white hover:border-riot-accent hover:bg-riot-surface transition-all shrink-0"
+            title={isExpanded ? "Collapse scoreboard" : "Expand scoreboard"}
+          >
             {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-riot-accent" />
+              <ChevronUp className="w-4 h-4 text-riot-accent" />
             ) : (
-              <ChevronDown className="w-5 h-5 group-hover:text-slate-200" />
+              <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-200" />
             )}
           </div>
         </div>
@@ -529,32 +507,10 @@ const TeamScoreboard: React.FC<TeamScoreboardProps> = ({
                   <td className="py-2.5 px-2 whitespace-nowrap">
                     <div className="flex items-center gap-1">
                       {playerItems.map((itemId, i) => (
-                        <div
-                          key={i}
-                          className="w-6 h-6 rounded bg-riot-darkest border border-riot-border/70 overflow-hidden flex items-center justify-center"
-                        >
-                          {itemId > 0 ? (
-                            <img
-                              src={getItemIconUrl(itemId)}
-                              alt="item"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-1 h-1 rounded-full bg-slate-800" />
-                          )}
-                        </div>
+                        <ItemTooltip key={i} itemId={itemId} size="sm" />
                       ))}
-                      {/* Trinket */}
-                      <div className="w-6 h-6 rounded bg-riot-darkest border border-riot-border/70 overflow-hidden flex items-center justify-center ml-0.5">
-                        {player.item6 > 0 ? (
-                          <img
-                            src={getItemIconUrl(player.item6)}
-                            alt="trinket"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-1 h-1 rounded-full bg-slate-800" />
-                        )}
+                      <div className="ml-0.5">
+                        <ItemTooltip itemId={player.item6} size="sm" isTrinket />
                       </div>
                     </div>
                   </td>
