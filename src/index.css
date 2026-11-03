@@ -5,7 +5,7 @@
 @layer base {
   body {
     @apply bg-riot-darkest text-slate-100 antialiased font-sans overflow-x-hidden min-h-screen;
-    background-image: 
+    background-image:
       radial-gradient(circle at 15% 0%, rgba(236, 72, 153, 0.09) 0%, transparent 50%),
       radial-gradient(circle at 85% 10%, rgba(129, 140, 248, 0.09) 0%, transparent 45%),
       radial-gradient(circle at 50% 100%, rgba(251, 191, 36, 0.04) 0%, transparent 40%);
@@ -31,4 +31,3 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #ec4899;
 }
-

@@ -216,17 +216,38 @@ export const MmrGraph: React.FC<MmrGraphProps> = ({ dataPoints, currentRank }) =
                 {/* Transparent hit target for easy mouse hover */}
                 <circle cx={cx} cy={cy} r="14" fill="transparent" />
 
-                {/* Outer Ring on Hover */}
+                {/* Outer Ring Ripple on Hover */}
                 {isHovered && (
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r="8"
-                    fill="none"
-                    stroke={d.win ? "#10b981" : "#f43f5e"}
-                    strokeWidth="2"
-                    className="animate-ping opacity-75"
-                  />
+                  <>
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r="4"
+                      fill="none"
+                      stroke={d.win ? "#10b981" : "#f43f5e"}
+                      strokeWidth="2"
+                    >
+                      <animate
+                        attributeName="r"
+                        values="5;13"
+                        dur="1.2s"
+                        repeatCount="indefinite"
+                      />
+                      <animate
+                        attributeName="opacity"
+                        values="0.85;0"
+                        dur="1.2s"
+                        repeatCount="indefinite"
+                      />
+                    </circle>
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r="9"
+                      fill={d.win ? "#10b981" : "#f43f5e"}
+                      fillOpacity="0.25"
+                    />
+                  </>
                 )}
 
                 {/* Center Node */}
@@ -235,9 +256,8 @@ export const MmrGraph: React.FC<MmrGraphProps> = ({ dataPoints, currentRank }) =
                   cy={cy}
                   r={isHovered ? 6 : 4}
                   fill={d.win ? "#10b981" : "#f43f5e"}
-                  stroke="#070a0e"
+                  stroke="#090714"
                   strokeWidth="2"
-                  className="transition-all duration-150"
                 />
 
                 {/* Match Number Label at Bottom */}
