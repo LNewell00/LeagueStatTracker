@@ -68,6 +68,7 @@ export interface AppPreferences {
   tagLine: string;
   region: string;
   useMockOnEmpty: boolean;
+  matchCount?: number;
 }
 
 const PREFS_KEY = "league_tracker_prefs";
@@ -76,7 +77,11 @@ export function loadPreferences(): AppPreferences {
   try {
     const raw = localStorage.getItem(PREFS_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      return {
+        ...parsed,
+        matchCount: parsed.matchCount || 20,
+      };
     }
   } catch {
     // ignore
@@ -88,6 +93,7 @@ export function loadPreferences(): AppPreferences {
     tagLine: import.meta.env.VITE_DEFAULT_TAG_LINE || "KR1",
     region: (import.meta.env.VITE_DEFAULT_REGION || "na").toLowerCase(),
     useMockOnEmpty: true,
+    matchCount: 20,
   };
 }
 

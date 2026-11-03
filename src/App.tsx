@@ -34,6 +34,14 @@ export const App: React.FC = () => {
   const [preferences, setPreferences] = useState<AppPreferences>(loadPreferences);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [activeAccount, setActiveAccount] = useState<{
+    puuid: string;
+    gameName: string;
+    tagLine: string;
+    region: string;
+    regionalRouting: string;
+  } | null>(null);
   const [statusMessage, setStatusMessage] = useState<{
     type: "info" | "success" | "error";
     text: string;
@@ -95,7 +103,7 @@ export const App: React.FC = () => {
   };
 
   const handleFetchMatches = useCallback(
-    async (gameName: string, tagLine: string, region: string) => {
+    async (gameName: string, tagLine: string, region: string, count: number = preferences.matchCount || 20) => {
       if (!preferences.apiKey) {
         setStatusMessage({
           type: "info",
@@ -120,6 +128,14 @@ export const App: React.FC = () => {
           preferences.apiKey
         );
 
+        setActiveAccount({
+          puuid: account.puuid,
+          gameName: account.gameName,
+          tagLine: account.tagLine,
+          region,
+          regionalRouting,
+        });
+
         // Fetch official Ranked Tier & LP from League-v4
         let currentSoloRank: RankedEntry | null = null;
         try {
@@ -136,15 +152,16 @@ export const App: React.FC = () => {
 
         setStatusMessage({
           type: "info",
-          text: `Found account: ${account.gameName}#${account.tagLine}. Pulling recent match IDs...`,
+          text: `Found ${account.gameName}#${account.tagLine}. Pulling last ${count} match IDs...`,
         });
 
-        // 2. Fetch Match IDs
+        // 2. Fetch Match IDs with chosen count
         const matchIds = await fetchMatchIds(
           account.puuid,
           regionalRouting,
-          10,
-          preferences.apiKey
+          count,
+          preferences.apiKey,
+          0
         );
 
         if (matchIds.length === 0) {
@@ -159,7 +176,7 @@ export const App: React.FC = () => {
         // 3. Fetch details for each match with rate-limit friendly batch pacing
         setStatusMessage({
           type: "info",
-          text: `Fetching ${matchIds.length} match details...`,
+          text: `Fetching ${matchIds.length} match details (0/${matchIds.length})...`,
         });
 
         const results = await batchFetchMatches(
@@ -173,7 +190,13 @@ export const App: React.FC = () => {
             }
           },
           5, // chunk size of 5 requests
-          100 // 100ms pause between chunks to safely stay well under 20 req/1s
+          100, // 100ms pause between chunks to safely stay well under 20 req/1s
+          (completed, total) => {
+            setStatusMessage({
+              type: "info",
+              text: `Fetching ${total} match details (${completed}/${total})...`,
+            });
+          }
         );
 
         const validMatches = results.filter((m): m is ParsedMatch => m !== null);
@@ -207,8 +230,120 @@ export const App: React.FC = () => {
         setIsLoading(false);
       }
     },
-    [preferences.apiKey]
+    [preferences.apiKey, preferences.matchCount, rankedEntry]
   );
+
+  const handleLoadMoreMatches = useCallback(async () => {
+    if (!preferences.apiKey) return;
+    if (isLoadingMore || isLoading) return;
+
+    let targetAccount = activeAccount;
+
+    // If activeAccount not set yet, attempt to resolve from preferences
+    if (!targetAccount) {
+      try {
+        const regionalRouting = getRegionalRouting(preferences.region);
+        const acc = await fetchRiotAccount(
+          preferences.gameName,
+          preferences.tagLine,
+          regionalRouting,
+          preferences.apiKey
+        );
+        targetAccount = {
+          puuid: acc.puuid,
+          gameName: acc.gameName,
+          tagLine: acc.tagLine,
+          region: preferences.region,
+          regionalRouting,
+        };
+        setActiveAccount(targetAccount);
+      } catch {
+        setStatusMessage({
+          type: "error",
+          text: "Could not verify account to load more matches.",
+        });
+        return;
+      }
+    }
+
+    setIsLoadingMore(true);
+    setStatusMessage({
+      type: "info",
+      text: `Pulling next batch of 10 matches (offset: ${matches.length})...`,
+    });
+
+    try {
+      const existingIds = new Set(matches.map((m) => m.matchId));
+      const nextBatchIds = await fetchMatchIds(
+        targetAccount.puuid,
+        targetAccount.regionalRouting,
+        10,
+        preferences.apiKey,
+        matches.length
+      );
+
+      const uniqueNewIds = nextBatchIds.filter((id) => !existingIds.has(id));
+
+      if (uniqueNewIds.length === 0) {
+        setStatusMessage({
+          type: "info",
+          text: "No more older matches found on Riot servers.",
+        });
+        setIsLoadingMore(false);
+        return;
+      }
+
+      const results = await batchFetchMatches(
+        uniqueNewIds,
+        async (mId) => {
+          try {
+            const raw = await fetchMatchDetail(mId, targetAccount!.regionalRouting, preferences.apiKey);
+            return parseRawMatch(raw, targetAccount!.puuid);
+          } catch {
+            return null;
+          }
+        },
+        5,
+        100,
+        (done, total) => {
+          setStatusMessage({
+            type: "info",
+            text: `Pulling older matches (${done}/${total})...`,
+          });
+        }
+      );
+
+      const newValid = results.filter((m): m is ParsedMatch => m !== null);
+
+      if (newValid.length > 0) {
+        const combined = [...matches, ...newValid];
+        setMatches(combined);
+        setSummary(computeSummaryStats(combined));
+        setMmrDataPoints(
+          calculateMmrProgression(combined, rankedEntry || undefined)
+        );
+        await saveMatchesToCache(combined);
+
+        setStatusMessage({
+          type: "success",
+          text: `Added ${newValid.length} older matches! Now tracking ${combined.length} total games.`,
+        });
+      } else {
+        setStatusMessage({
+          type: "info",
+          text: "No additional match details could be retrieved.",
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setStatusMessage({
+        type: "error",
+        text: err?.message || "Failed to load additional matches.",
+      });
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [preferences, activeAccount, matches, isLoadingMore, isLoading, rankedEntry]);
 
   const handleToggleMockLive = () => {
     const next = !isMockLiveActive;
@@ -240,6 +375,7 @@ export const App: React.FC = () => {
         gameName={preferences.gameName}
         tagLine={preferences.tagLine}
         region={preferences.region}
+        matchCount={preferences.matchCount || 20}
         isLoading={isLoading}
         isLiveGameActive={liveState.isActive}
         onSearch={handleFetchMatches}
@@ -291,8 +427,14 @@ export const App: React.FC = () => {
           onToggleMock={handleToggleMockLive}
         />
 
-        {/* 3. Recent Matches Table */}
-        <MatchHistoryTable matches={matches} isLoading={isLoading} />
+        {/* 4. Recent Matches Table */}
+        <MatchHistoryTable
+          matches={matches}
+          isLoading={isLoading}
+          isLoadingMore={isLoadingMore}
+          onLoadMore={handleLoadMoreMatches}
+          hasApiKey={Boolean(preferences.apiKey)}
+        />
       </main>
 
       {/* Settings Modal */}

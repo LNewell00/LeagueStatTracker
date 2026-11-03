@@ -261,16 +261,22 @@ export const MmrGraph: React.FC<MmrGraphProps> = ({ dataPoints, currentRank }) =
                 />
 
                 {/* Match Number Label at Bottom */}
-                <text
-                  x={cx}
-                  y={paddingY + innerHeight + 16}
-                  textAnchor="middle"
-                  className={`text-[9px] font-mono ${
-                    isHovered ? "fill-riot-accent font-bold" : "fill-slate-500"
-                  }`}
-                >
-                  G{d.matchIndex}
-                </text>
+                {(isHovered ||
+                  dataPoints.length <= 15 ||
+                  i === 0 ||
+                  i === dataPoints.length - 1 ||
+                  (dataPoints.length <= 25 ? i % 2 === 0 : i % 5 === 0)) && (
+                  <text
+                    x={cx}
+                    y={paddingY + innerHeight + 16}
+                    textAnchor="middle"
+                    className={`text-[9px] font-mono ${
+                      isHovered ? "fill-riot-accent font-bold" : "fill-slate-500"
+                    }`}
+                  >
+                    G{d.matchIndex}
+                  </text>
+                )}
               </g>
             );
           })}

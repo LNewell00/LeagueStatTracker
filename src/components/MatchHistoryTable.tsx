@@ -1,14 +1,23 @@
 import React, { useState } from "react";
 import { ParsedMatch } from "../types/riot";
 import { MatchRow } from "./MatchRow";
-import { History, Shield, CheckCircle2, XCircle } from "lucide-react";
+import { History, Shield, CheckCircle2, XCircle, PlusCircle } from "lucide-react";
 
 interface MatchHistoryTableProps {
   matches: ParsedMatch[];
   isLoading: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
+  hasApiKey?: boolean;
 }
 
-export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({ matches, isLoading }) => {
+export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
+  matches,
+  isLoading,
+  isLoadingMore = false,
+  onLoadMore,
+  hasApiKey = false,
+}) => {
   const [filter, setFilter] = useState<"ALL" | "WIN" | "LOSS">("ALL");
 
   const filteredMatches = matches.filter((m) => {
@@ -78,7 +87,33 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({ matches, i
             <p className="text-xs text-slate-500 mt-1">Try selecting another filter or fetch fresh matches.</p>
           </div>
         ) : (
-          filteredMatches.map((match) => <MatchRow key={match.matchId} match={match} />)
+          <>
+            {filteredMatches.map((match) => (
+              <MatchRow key={match.matchId} match={match} />
+            ))}
+
+            {onLoadMore && hasApiKey && (
+              <div className="pt-2 pb-1 text-center">
+                <button
+                  onClick={onLoadMore}
+                  disabled={isLoading || isLoadingMore}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-riot-surface border border-riot-accent/30 hover:border-riot-accent/70 hover:bg-riot-accent/15 text-riot-accent hover:text-pink-300 text-xs font-bold tracking-wide uppercase shadow-lg shadow-riot-accent/10 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-riot-accent border-t-transparent rounded-full animate-spin" />
+                      <span>Pulling More Matches...</span>
+                    </>
+                  ) : (
+                    <>
+                      <PlusCircle className="w-4 h-4 text-riot-accent" />
+                      <span>Load More Matches (+10)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

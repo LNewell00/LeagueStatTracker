@@ -50,12 +50,14 @@ pub async fn get_match_ids(
     puuid: String,
     regional_routing: String,
     count: u32,
+    start: Option<u32>,
     api_key: String,
 ) -> Result<Vec<String>, String> {
+    let start_idx = start.unwrap_or(0);
     let client = reqwest::Client::new();
     let url = format!(
-        "https://{}.api.riotgames.com/lol/match/v5/matches/by-puuid/{}/ids?start=0&count={}",
-        regional_routing, puuid, count
+        "https://{}.api.riotgames.com/lol/match/v5/matches/by-puuid/{}/ids?start={}&count={}",
+        regional_routing, puuid, start_idx, count
     );
 
     let res = client

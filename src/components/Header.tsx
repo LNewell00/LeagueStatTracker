@@ -6,9 +6,10 @@ interface HeaderProps {
   gameName: string;
   tagLine: string;
   region: string;
+  matchCount?: number;
   isLoading: boolean;
   isLiveGameActive: boolean;
-  onSearch: (gameName: string, tagLine: string, region: string) => void;
+  onSearch: (gameName: string, tagLine: string, region: string, count: number) => void;
   onOpenSettings: () => void;
   hasApiKey: boolean;
 }
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   gameName,
   tagLine,
   region,
+  matchCount = 20,
   isLoading,
   isLiveGameActive,
   onSearch,
@@ -25,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [inputRiotId, setInputRiotId] = useState(`${gameName}#${tagLine}`);
   const [selectedRegion, setSelectedRegion] = useState(region?.toLowerCase() || "na");
+  const [selectedCount, setSelectedCount] = useState<number>(matchCount);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +35,7 @@ export const Header: React.FC<HeaderProps> = ({
     const name = parts[0]?.trim() || "";
     const tag = parts[1]?.trim() || "NA1";
     if (name) {
-      onSearch(name, tag, selectedRegion);
+      onSearch(name, tag, selectedRegion, selectedCount);
     }
   };
 
@@ -89,6 +92,19 @@ export const Header: React.FC<HeaderProps> = ({
                 {r.name}
               </option>
             ))}
+          </select>
+
+          <select
+            value={selectedCount}
+            onChange={(e) => setSelectedCount(Number(e.target.value))}
+            className="bg-riot-surface border border-riot-border text-slate-200 text-sm rounded-lg px-2.5 py-2 focus:outline-none focus:border-riot-accent cursor-pointer"
+            title="Number of matches to pull"
+          >
+            <option value={10}>10 Games</option>
+            <option value={20}>20 Games</option>
+            <option value={30}>30 Games</option>
+            <option value={40}>40 Games</option>
+            <option value={50}>50 Games</option>
           </select>
 
           <button

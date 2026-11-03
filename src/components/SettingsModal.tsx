@@ -23,6 +23,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [gameName, setGameName] = useState(preferences.gameName);
   const [tagLine, setTagLine] = useState(preferences.tagLine);
   const [region, setRegion] = useState(preferences.region);
+  const [matchCount, setMatchCount] = useState<number>(preferences.matchCount || 20);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   // Auto-updater states
@@ -75,6 +76,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       gameName: gameName.trim(),
       tagLine: tagLine.trim(),
       region,
+      matchCount,
     };
     savePreferences(newPrefs);
     onSavePreferences(newPrefs);
@@ -167,21 +169,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-              Default Region
-            </label>
-            <select
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              className="w-full px-3 py-2 text-sm bg-riot-darkest border border-riot-border rounded-xl text-slate-200 focus:outline-none focus:border-riot-accent cursor-pointer"
-            >
-              {SUPPORTED_REGIONS.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
+                Default Region
+              </label>
+              <select
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-riot-darkest border border-riot-border rounded-xl text-slate-200 focus:outline-none focus:border-riot-accent cursor-pointer"
+              >
+                {SUPPORTED_REGIONS.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
+                Default Game Count
+              </label>
+              <select
+                value={matchCount}
+                onChange={(e) => setMatchCount(Number(e.target.value))}
+                className="w-full px-3 py-2 text-sm bg-riot-darkest border border-riot-border rounded-xl text-slate-200 focus:outline-none focus:border-riot-accent cursor-pointer"
+              >
+                <option value={10}>10 Games</option>
+                <option value={20}>20 Games (Recommended)</option>
+                <option value={30}>30 Games</option>
+                <option value={40}>40 Games</option>
+                <option value={50}>50 Games</option>
+              </select>
+            </div>
           </div>
 
           {/* Local Cache Management */}

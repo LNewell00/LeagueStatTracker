@@ -79,8 +79,9 @@ export async function fetchRiotAccount(
 export async function fetchMatchIds(
   puuid: string,
   regionalRouting: string,
-  count: number = 10,
-  apiKey: string
+  count: number = 20,
+  apiKey: string,
+  start: number = 0
 ): Promise<string[]> {
   if (isTauriEnvironment()) {
     const { invoke } = await import("@tauri-apps/api/core");
@@ -88,11 +89,12 @@ export async function fetchMatchIds(
       puuid,
       regionalRouting,
       count,
+      start,
       apiKey,
     });
   }
 
-  const url = `https://${regionalRouting}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}`;
+  const url = `https://${regionalRouting}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=${start}&count=${count}`;
   const res = await fetch(url, {
     headers: { "X-Riot-Token": apiKey },
   });
@@ -150,13 +152,17 @@ export async function batchFetchMatches<T, R>(
   items: T[],
   fn: (item: T) => Promise<R>,
   chunkSize: number = 5,
-  delayMs: number = 80
+  delayMs: number = 80,
+  onProgress?: (completed: number, total: number) => void
 ): Promise<R[]> {
   const results: R[] = [];
   for (let i = 0; i < items.length; i += chunkSize) {
     const chunk = items.slice(i, i + chunkSize);
     const chunkResults = await Promise.all(chunk.map((item) => fn(item)));
     results.push(...chunkResults);
+    if (onProgress) {
+      onProgress(results.length, items.length);
+    }
     if (i + chunkSize < items.length) {
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
