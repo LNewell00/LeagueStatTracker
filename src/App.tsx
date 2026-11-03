@@ -523,9 +523,13 @@ export const App: React.FC = () => {
             <StatsOverview
               summary={summary}
               summonerName={`${preferences.gameName}#${preferences.tagLine}`}
+              currentRank={rankedEntry}
+              matches={matches}
+              mmrPoints={mmrDataPoints}
             />
             <MatchHistoryTable
               matches={matches}
+              mmrPoints={mmrDataPoints}
               isLoading={isLoading}
               isLoadingMore={isLoadingMore}
               onLoadMore={handleLoadMoreMatches}
@@ -542,6 +546,9 @@ export const App: React.FC = () => {
             <StatsOverview
               summary={summary}
               summonerName={`${preferences.gameName}#${preferences.tagLine}`}
+              currentRank={rankedEntry}
+              matches={matches}
+              mmrPoints={mmrDataPoints}
             />
           </div>
         )}

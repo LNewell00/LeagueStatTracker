@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { ParsedMatch } from "../types/riot";
+import { ParsedMatch, MmrDataPoint } from "../types/riot";
 import { MatchRow } from "./MatchRow";
 import {
   History,
@@ -10,10 +10,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ListFilter,
+  Layers,
+  TrendingUp,
 } from "lucide-react";
 
 interface MatchHistoryTableProps {
   matches: ParsedMatch[];
+  mmrPoints?: MmrDataPoint[];
   isLoading: boolean;
   isLoadingMore?: boolean;
   onLoadMore?: () => void;
@@ -23,6 +26,7 @@ interface MatchHistoryTableProps {
 
 export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
   matches,
+  mmrPoints,
   isLoading,
   isLoadingMore = false,
   onLoadMore,
@@ -30,21 +34,52 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
   onOpenBreakdown,
 }) => {
   const [filter, setFilter] = useState<"ALL" | "WIN" | "LOSS">("ALL");
+  const [queueFilter, setQueueFilter] = useState<string>("ALL");
   const [pageSize, setPageSize] = useState<number | "ALL">(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  // Filter matches
+  // Map MMR points by match ID for instant O(1) delta lookup
+  const mmrMap = useMemo(() => {
+    return new Map(mmrPoints?.map((p) => [p.matchId, p]) || []);
+  }, [mmrPoints]);
+
+  // Count matches per queue
+  const queueCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: matches.length };
+    matches.forEach((m) => {
+      const q = String(m.queueId);
+      counts[q] = (counts[q] || 0) + 1;
+    });
+    return counts;
+  }, [matches]);
+
+  // Filter matches by both Win/Loss and Queue
   const filteredMatches = useMemo(() => {
     return matches.filter((m) => {
-      if (filter === "WIN") return m.targetParticipant.win;
-      if (filter === "LOSS") return !m.targetParticipant.win;
+      // Win/Loss filter
+      if (filter === "WIN" && !m.targetParticipant.win) return false;
+      if (filter === "LOSS" && m.targetParticipant.win) return false;
+
+      // Queue filter
+      if (queueFilter !== "ALL") {
+        if (queueFilter === "420" && m.queueId !== 420) return false;
+        if (queueFilter === "440" && m.queueId !== 440) return false;
+        if (queueFilter === "400" && m.queueId !== 400 && m.queueId !== 430) return false;
+        if (queueFilter === "450" && m.queueId !== 450) return false;
+        if (
+          queueFilter === "OTHER" &&
+          [420, 440, 400, 430, 450].includes(m.queueId)
+        )
+          return false;
+      }
+
       return true;
     });
-  }, [matches, filter]);
+  }, [matches, filter, queueFilter]);
 
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [filter, matches.length, pageSize]);
+  }, [filter, queueFilter, matches.length, pageSize]);
 
   // Pagination calculation
   const totalPages =
@@ -62,6 +97,11 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
       ? filteredMatches.length
       : Math.min(currentPage * pageSize, filteredMatches.length);
 
+  // Filtered telemetry summary
+  const winsCount = filteredMatches.filter((m) => m.targetParticipant.win).length;
+  const lossesCount = filteredMatches.length - winsCount;
+  const winRate = filteredMatches.length > 0 ? Math.round((winsCount / filteredMatches.length) * 100) : 0;
+
   return (
     <div className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0e14] rounded p-4 shadow-sm space-y-3">
       {/* Table Header & Controls Bar */}
@@ -76,6 +116,11 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
               <span className="text-xs text-neutral-500 tabular-nums">
                 ({filteredMatches.length} / {matches.length} Total)
               </span>
+              {filteredMatches.length > 0 && (
+                <span className="text-[11px] px-1.5 py-0.5 rounded-sm font-bold bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300">
+                  {winsCount}W - {lossesCount}L ({winRate}%)
+                </span>
+              )}
             </div>
             {filteredMatches.length > 0 && (
               <p className="text-[10px] font-mono text-neutral-400 mt-0.5 tabular-nums">
@@ -97,7 +142,7 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
                   : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
               }`}
             >
-              All ({matches.length})
+              All
             </button>
             <button
               onClick={() => setFilter("WIN")}
@@ -160,6 +205,64 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
         </div>
       </div>
 
+      {/* Queue Mode Filter Subbar */}
+      <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-neutral-200 dark:border-neutral-800 text-xs font-mono">
+        <span className="text-[10px] uppercase font-bold text-neutral-400 mr-1 flex items-center gap-1">
+          <Layers className="w-3 h-3" /> Queue:
+        </span>
+        <button
+          onClick={() => setQueueFilter("ALL")}
+          className={`px-2 py-0.5 rounded-sm transition-all ${
+            queueFilter === "ALL"
+              ? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-bold"
+              : "bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border border-neutral-200 dark:border-neutral-800"
+          }`}
+        >
+          All Modes ({matches.length})
+        </button>
+        <button
+          onClick={() => setQueueFilter("420")}
+          className={`px-2 py-0.5 rounded-sm transition-all flex items-center gap-1 ${
+            queueFilter === "420"
+              ? "bg-riot-red text-white font-bold"
+              : "bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:border-riot-red border border-neutral-200 dark:border-neutral-800"
+          }`}
+        >
+          <TrendingUp className="w-2.5 h-2.5" />
+          Ranked Solo ({queueCounts["420"] || 0})
+        </button>
+        <button
+          onClick={() => setQueueFilter("440")}
+          className={`px-2 py-0.5 rounded-sm transition-all ${
+            queueFilter === "440"
+              ? "bg-purple-600 text-white font-bold"
+              : "bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-purple-400 border border-neutral-200 dark:border-neutral-800"
+          }`}
+        >
+          Ranked Flex ({queueCounts["440"] || 0})
+        </button>
+        <button
+          onClick={() => setQueueFilter("400")}
+          className={`px-2 py-0.5 rounded-sm transition-all ${
+            queueFilter === "400"
+              ? "bg-sky-600 text-white font-bold"
+              : "bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-sky-400 border border-neutral-200 dark:border-neutral-800"
+          }`}
+        >
+          Normal Draft ({ (queueCounts["400"] || 0) + (queueCounts["430"] || 0) })
+        </button>
+        <button
+          onClick={() => setQueueFilter("450")}
+          className={`px-2 py-0.5 rounded-sm transition-all ${
+            queueFilter === "450"
+              ? "bg-amber-600 text-white font-bold"
+              : "bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-amber-400 border border-neutral-200 dark:border-neutral-800"
+          }`}
+        >
+          ARAM ({queueCounts["450"] || 0})
+        </button>
+      </div>
+
       {/* Content Area */}
       <div className="space-y-2 pt-0.5">
         {isLoading && matches.length === 0 ? (
@@ -184,6 +287,7 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
             <MatchRow
               key={match.matchId}
               match={match}
+              mmrPoint={mmrMap.get(match.matchId)}
               onOpenBreakdown={onOpenBreakdown}
             />
           ))

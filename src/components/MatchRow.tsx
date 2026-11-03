@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ParsedMatch, MatchParticipant } from "../types/riot";
+import { ParsedMatch, MatchParticipant, MmrDataPoint } from "../types/riot";
 import {
   getChampionIconUrl,
   getSummonerSpellIconUrl,
@@ -13,13 +13,18 @@ import {
   Crown,
   BarChart2,
 } from "lucide-react";
+import {
+  getQueueMeta,
+  calculateLpDeltaForMatch,
+} from "../services/rankedAnalytics";
 
 interface MatchRowProps {
   match: ParsedMatch;
   onOpenBreakdown?: (match: ParsedMatch) => void;
+  mmrPoint?: MmrDataPoint;
 }
 
-export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) => {
+export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown, mmrPoint }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const p = match.targetParticipant;
   const isWin = p.win;
@@ -46,36 +51,8 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
     return "text-neutral-600 dark:text-neutral-400 font-semibold";
   };
 
-  const getQueueName = (queueId?: number, gameMode?: string): string => {
-    switch (queueId) {
-      case 420:
-        return "Ranked Solo";
-      case 440:
-        return "Ranked Flex";
-      case 400:
-        return "Normal Draft";
-      case 430:
-        return "Normal Blind";
-      case 450:
-        return "ARAM";
-      case 490:
-        return "Quickplay";
-      case 700:
-        return "Clash";
-      case 830:
-      case 840:
-      case 850:
-        return "Co-op vs AI";
-      case 0:
-        return "Custom";
-      default:
-        if (gameMode === "PRACTICETOOL") return "Practice Tool";
-        if (gameMode === "ARAM") return "ARAM";
-        if (gameMode === "CHERRY") return "Arena";
-        if (gameMode === "CLASSIC") return "Normal";
-        return gameMode ? gameMode.charAt(0) + gameMode.slice(1).toLowerCase() : "Match";
-    }
-  };
+  const queueMeta = getQueueMeta(match.queueId, match.gameMode);
+  const lpInfo = calculateLpDeltaForMatch(match, mmrPoint);
 
   const items = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5];
 
@@ -93,17 +70,11 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
   const redTeamStats = match.teams?.find((t) => t.teamId === 200);
 
   return (
-    <div
-      className={`border rounded transition-all duration-150 overflow-hidden ${
-        isWin
-          ? "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0e1118]"
-          : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0e1118]"
-      }`}
-    >
+    <div className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0e1118] rounded transition-all duration-150 overflow-hidden font-mono text-xs">
       {/* Main Collapsed Card */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="relative px-4 py-2.5 flex flex-col xl:flex-row items-center justify-between gap-3 cursor-pointer hover:bg-neutral-50 dark:hover:bg-[#121622] transition-colors select-none"
+        className="relative px-3 sm:px-4 py-2.5 flex flex-col xl:flex-row items-center justify-between gap-3 cursor-pointer hover:bg-neutral-50 dark:hover:bg-[#121622] transition-colors select-none"
       >
         {/* Crisp Left Edge Indicator */}
         <div
@@ -112,12 +83,12 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
           }`}
         />
 
-        {/* Section 1: Win/Loss status, queue & duration */}
-        <div className="flex items-center gap-3 w-full xl:w-40 font-mono">
+        {/* Section 1: Win/Loss status, Prominent LP Delta & Queue */}
+        <div className="flex items-center gap-3 w-full xl:w-56 shrink-0">
           <div>
             <div className="flex items-center gap-1.5">
               <span
-                className={`text-[11px] font-mono font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm ${
+                className={`text-[11px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded-sm ${
                   isWin
                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
                     : "bg-riot-red/10 text-riot-red border border-riot-red/30"
@@ -125,12 +96,35 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
               >
                 {isWin ? "Victory" : "Defeat"}
               </span>
+
+              {/* LP DELTA TICKER (Ranked) OR MODE BADGE (Normal/ARAM) */}
+              {lpInfo.isRanked ? (
+                <span
+                  className={`text-[11px] font-black tracking-wider px-1.5 py-0.2 rounded-sm tabular-nums flex items-center gap-0.5 ${
+                    lpInfo.isGain
+                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40"
+                      : "bg-riot-red/15 text-riot-red border border-riot-red/40"
+                  }`}
+                  title="Ranked LP Gained / Lost"
+                >
+                  <span>{lpInfo.isGain ? "▲" : "▼"}</span>
+                  <span>{lpInfo.deltaText}</span>
+                </span>
+              ) : (
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded-sm border ${queueMeta.border} ${queueMeta.bg} ${queueMeta.color}`}
+                >
+                  {queueMeta.shortLabel}
+                </span>
+              )}
             </div>
-            <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1">
-              <span className="font-semibold text-neutral-800 dark:text-neutral-200">
-                {getQueueName(match.queueId, match.gameMode)}
+
+            <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 flex items-center gap-1.5">
+              <span className={`font-semibold ${queueMeta.color}`}>
+                {queueMeta.name}
               </span>
-              <div className="text-[10px] text-neutral-400">
+              <span>•</span>
+              <div className="text-[10px] text-neutral-400 tabular-nums">
                 {formatDuration(match.gameDuration)} • {formatTimeAgo(match.gameCreation)}
               </div>
             </div>
@@ -148,7 +142,7 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
                 loading="lazy"
               />
             </div>
-            <span className="absolute -bottom-1 -right-1 bg-neutral-900 border border-neutral-700 text-neutral-200 text-[8px] font-mono font-bold px-0.5 rounded-sm">
+            <span className="absolute bottom-0 right-0 bg-neutral-950 border border-neutral-700 text-neutral-200 text-[8px] font-bold px-0.5 rounded-sm tabular-nums">
               {p.champLevel}
             </span>
           </div>
@@ -180,14 +174,14 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
                 </span>
               )}
             </div>
-            <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 tabular-nums">
+            <div className="text-[10px] text-neutral-500 dark:text-neutral-400 tabular-nums">
               CS {p.cs} <span className="text-neutral-400">({p.csPerMin}/m)</span>
             </div>
           </div>
         </div>
 
         {/* Section 3: KDA & Score */}
-        <div className="flex flex-col items-center xl:items-start w-full xl:w-28 font-mono tabular-nums">
+        <div className="flex flex-col items-center xl:items-start w-full xl:w-28 tabular-nums">
           <div className="text-xs font-black text-neutral-900 dark:text-neutral-100">
             {p.kills} / <span className="text-riot-red">{p.deaths}</span> / {p.assists}
           </div>
@@ -207,7 +201,7 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
         </div>
 
         {/* Section 5: Stats (Damage & Vision) */}
-        <div className="hidden lg:flex items-center gap-3 text-xs font-mono tabular-nums text-neutral-500 dark:text-neutral-400 border-l border-neutral-200 dark:border-neutral-800 pl-3">
+        <div className="hidden lg:flex items-center gap-3 text-xs tabular-nums text-neutral-500 dark:text-neutral-400 border-l border-neutral-200 dark:border-neutral-800 pl-3">
           <div className="flex items-center gap-1" title="Damage to champions">
             <Flame className="w-3 h-3 text-riot-red" />
             <span>{p.totalDamageDealtToChampions.toLocaleString()}</span>
@@ -232,7 +226,7 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
                     />
                   </div>
                   <span
-                    className={`text-[9px] font-mono truncate max-w-[60px] ${
+                    className={`text-[9px] truncate max-w-[60px] ${
                       pl.puuid === p.puuid ? "text-riot-red font-bold" : "text-neutral-500"
                     }`}
                   >
@@ -253,7 +247,7 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
                     />
                   </div>
                   <span
-                    className={`text-[9px] font-mono truncate max-w-[60px] ${
+                    className={`text-[9px] truncate max-w-[60px] ${
                       pl.puuid === p.puuid ? "text-riot-red font-bold" : "text-neutral-500"
                     }`}
                   >
@@ -273,7 +267,7 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
                 e.stopPropagation();
                 onOpenBreakdown(match);
               }}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-800 hover:bg-riot-red hover:text-white border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-[11px] font-mono font-bold transition-all shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-800 hover:bg-riot-red hover:text-white border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-[11px] font-bold transition-all shrink-0"
               title="Open match breakdown"
             >
               <BarChart2 className="w-3 h-3" />
@@ -353,7 +347,7 @@ const TeamScoreboard: React.FC<TeamScoreboardProps> = ({
   return (
     <div className="border border-neutral-200 dark:border-neutral-800 rounded-sm overflow-hidden bg-white dark:bg-[#11141c]">
       {/* Team Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100/70 dark:bg-[#151924] text-xs font-mono">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100/70 dark:bg-[#151924] text-xs">
         <div className="flex items-center gap-2">
           <span
             className={`px-1.5 py-0.2 rounded-sm text-[9px] font-black uppercase ${
@@ -382,7 +376,7 @@ const TeamScoreboard: React.FC<TeamScoreboardProps> = ({
 
       {/* Players Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs text-neutral-700 dark:text-neutral-300 border-collapse font-mono">
+        <table className="w-full text-left text-xs text-neutral-700 dark:text-neutral-300 border-collapse">
           <thead>
             <tr className="border-b border-neutral-200 dark:border-neutral-800 text-[9px] uppercase font-bold text-neutral-400 tracking-wider bg-neutral-50/50 dark:bg-[#131620]">
               <th className="py-1.5 px-2">Player / Champion</th>
