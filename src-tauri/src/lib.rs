@@ -1,6 +1,10 @@
 mod commands;
 
 use commands::live_client::poll_live_client_data;
+use commands::recording::{
+    delete_recording, list_recordings, open_recordings_folder, save_recording_file,
+    scan_rofl_replays,
+};
 use commands::riot_api::{
     get_league_entries, get_match_detail, get_match_ids, get_match_timeline, get_riot_account,
 };
@@ -33,7 +37,12 @@ pub fn run() {
             poll_live_client_data,
             save_match_cache,
             load_match_cache,
-            clear_match_cache
+            clear_match_cache,
+            save_recording_file,
+            list_recordings,
+            delete_recording,
+            open_recordings_folder,
+            scan_rofl_replays
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -9,6 +9,8 @@ import { DuoSynergyTab } from "./components/DuoSynergyTab";
 import { ChampionPoolTab } from "./components/ChampionPoolTab";
 import { ItemBuildPlannerTab } from "./components/ItemBuildPlannerTab";
 import { MatchBreakdownModal } from "./components/MatchBreakdownModal";
+import { RecordingTab } from "./components/RecordingTab";
+import { screenRecorder } from "./services/screenRecorder";
 import { SettingsModal } from "./components/SettingsModal";
 import { ParsedMatch, PlayerStatsSummary, RankedEntry, MmrDataPoint } from "./types/riot";
 import { LivePollerState } from "./types/live";
@@ -43,6 +45,13 @@ export const App: React.FC = () => {
   const [preferences, setPreferences] = useState<AppPreferences>(loadPreferences);
   const [theme, setTheme] = useState<"dark" | "light">(getInitialTheme);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+
+  useEffect(() => {
+    return screenRecorder.onStateChange((st) => {
+      setIsRecording(st === "recording");
+    });
+  }, []);
   const [activeTab, setActiveTab] = useState<TabType>("matches");
   const [selectedBreakdownMatch, setSelectedBreakdownMatch] = useState<ParsedMatch | null>(null);
   const [selectedBuildChamp, setSelectedBuildChamp] = useState<string>("Caitlyn");
@@ -487,6 +496,7 @@ export const App: React.FC = () => {
         duosCount={duosCount}
         poolCount={loadChampionPool().length}
         buildsCount={loadCustomBuilds().length}
+        isRecording={isRecording}
       />
 
       {/* Main Body */}
@@ -581,6 +591,13 @@ export const App: React.FC = () => {
         {activeTab === "builds" && (
           <div className="animate-in fade-in">
             <ItemBuildPlannerTab initialChampion={selectedBuildChamp} />
+          </div>
+        )}
+
+        {/* Tab 7: VOD & Recordings */}
+        {activeTab === "recording" && (
+          <div className="space-y-6 animate-in fade-in">
+            <RecordingTab />
           </div>
         )}
 
