@@ -12,6 +12,8 @@ src-tauri/gen
 src-tauri/*.key
 
 # Editor / OS
+installers/
+*.msi
 .vscode/*
 !.vscode/extensions.json
 .idea
