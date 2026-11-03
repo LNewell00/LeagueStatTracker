@@ -69,9 +69,37 @@ export interface AppPreferences {
   region: string;
   useMockOnEmpty: boolean;
   matchCount?: number;
+  theme?: "dark" | "light";
 }
 
 const PREFS_KEY = "league_tracker_prefs";
+
+export function getInitialTheme(): "dark" | "light" {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.theme === "light" || parsed.theme === "dark") {
+        return parsed.theme;
+      }
+    }
+  } catch {
+    // fallback
+  }
+  return "dark";
+}
+
+export function applyTheme(theme: "dark" | "light"): void {
+  if (typeof document !== "undefined") {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+      document.documentElement.classList.remove("light");
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.classList.add("light");
+    }
+  }
+}
 
 export function loadPreferences(): AppPreferences {
   try {
@@ -81,6 +109,7 @@ export function loadPreferences(): AppPreferences {
       return {
         ...parsed,
         matchCount: parsed.matchCount || 20,
+        theme: parsed.theme || "dark",
       };
     }
   } catch {
@@ -94,6 +123,7 @@ export function loadPreferences(): AppPreferences {
     region: (import.meta.env.VITE_DEFAULT_REGION || "na").toLowerCase(),
     useMockOnEmpty: true,
     matchCount: 20,
+    theme: "dark",
   };
 }
 

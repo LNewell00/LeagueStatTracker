@@ -21,7 +21,6 @@ import {
   Package,
   Plus,
   Trash2,
-  Sparkles,
   Search,
   Download,
   Copy,
@@ -36,20 +35,20 @@ interface ItemBuildPlannerTabProps {
 }
 
 const ENEMY_THREAT_LABELS: Record<EnemyThreatArchetype, { label: string; color: string }> = {
-  HEAVY_ARMOR: { label: "Heavy Armor / Tanks", color: "text-amber-400 border-amber-500/40 bg-amber-500/10" },
-  HEAVY_MAGIC: { label: "Heavy AP / Magic Burst", color: "text-cyan-400 border-cyan-500/40 bg-cyan-500/10" },
-  HIGH_HEALING: { label: "High Healing / Sustain", color: "text-emerald-400 border-emerald-500/40 bg-emerald-500/10" },
-  ASSASSIN_DIVE: { label: "High Burst / Assassins", color: "text-rose-400 border-rose-500/40 bg-rose-500/10" },
-  HIGH_SHIELDS: { label: "Heavy Shields", color: "text-purple-400 border-purple-500/40 bg-purple-500/10" },
-  HEAVY_CC: { label: "Heavy Lockdown CC", color: "text-indigo-400 border-indigo-500/40 bg-indigo-500/10" },
-  STANDARD_BALANCED: { label: "Balanced Standard Comp", color: "text-slate-300 border-slate-500/40 bg-slate-500/10" },
+  HEAVY_ARMOR: { label: "Armor Tanks", color: "text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10" },
+  HEAVY_MAGIC: { label: "Magic Burst", color: "text-blue-600 dark:text-blue-400 border-blue-500/30 bg-blue-500/10" },
+  HIGH_HEALING: { label: "Sustain / Healing", color: "text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  ASSASSIN_DIVE: { label: "Assassins / Dive", color: "text-riot-red border-riot-red/30 bg-riot-red/10" },
+  HIGH_SHIELDS: { label: "Heavy Shields", color: "text-purple-600 dark:text-purple-400 border-purple-500/30 bg-purple-500/10" },
+  HEAVY_CC: { label: "Lockdown CC", color: "text-indigo-600 dark:text-indigo-400 border-indigo-500/30 bg-indigo-500/10" },
+  STANDARD_BALANCED: { label: "Standard Balanced", color: "text-neutral-600 dark:text-neutral-400 border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800" },
 };
 
 const ALLY_SYNERGY_LABELS: Record<AllySynergyArchetype, { label: string; color: string }> = {
-  ENGAGE_DIVE: { label: "Engage / Dive Frontline", color: "text-blue-300 border-blue-500/40 bg-blue-500/10" },
-  ENCHANTER_PEEL: { label: "Enchanter / Peel Support", color: "text-pink-300 border-pink-500/40 bg-pink-500/10" },
-  POKE_SIEGE: { label: "Poke / Long Range Siege", color: "text-amber-300 border-amber-500/40 bg-amber-500/10" },
-  HYPERCARRY_COMP: { label: "Protect-The-Carry", color: "text-emerald-300 border-emerald-500/40 bg-emerald-500/10" },
+  ENGAGE_DIVE: { label: "Engage Frontline", color: "text-blue-600 dark:text-blue-400 border-blue-500/30 bg-blue-500/10" },
+  ENCHANTER_PEEL: { label: "Enchanter Peel", color: "text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10" },
+  POKE_SIEGE: { label: "Long Range Poke", color: "text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-500/10" },
+  HYPERCARRY_COMP: { label: "Protect Carry", color: "text-purple-600 dark:text-purple-400 border-purple-500/30 bg-purple-500/10" },
 };
 
 export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
@@ -58,28 +57,21 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
   const [builds, setBuilds] = useState<CustomBuildPlan[]>(loadCustomBuilds);
   const pool = useMemo(() => loadChampionPool(), []);
 
-  // Selected Champion Filter
   const [selectedChamp, setSelectedChamp] = useState<string>(() => {
     if (initialChampion) return initialChampion;
     if (pool.length > 0) return pool[0].championName;
     return "Caitlyn";
   });
 
-  const [copiedDataset, setCopiedDataset] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // All Items from DataDragon
   const [allItemsList, setAllItemsList] = useState<ItemInfo[]>([]);
-  const [itemSearchQuery, setItemSearchQuery] = useState("");
-  const [activeItemSlotType, setActiveItemSlotType] = useState<
-    "starting" | "core" | "situational" | "boots" | null
-  >(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [copiedDataset, setCopiedDataset] = useState(false);
 
-  // Form State for new build
+  // Form State
   const [formTitle, setFormTitle] = useState("");
   const [formRole, setFormRole] = useState<ChampionRole>("BOTTOM");
   const [formThreats, setFormThreats] = useState<EnemyThreatArchetype[]>(["HEAVY_ARMOR"]);
-  const [formSynergies, setFormSynergies] = useState<AllySynergyArchetype[]>(["ENCHANTER_PEEL"]);
+  const [formSynergies, setFormSynergies] = useState<AllySynergyArchetype[]>([]);
   const [formStarting, setFormStarting] = useState<number[]>([]);
   const [formCore, setFormCore] = useState<number[]>([]);
   const [formSituational, setFormSituational] = useState<number[]>([]);
@@ -87,26 +79,16 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
   const [formNotes, setFormNotes] = useState("");
   const [formReasoning, setFormReasoning] = useState("");
 
+  const [itemSearchQuery, setItemSearchQuery] = useState("");
+  const [activeSlotPicker, setActiveSlotPicker] = useState<
+    "starting" | "core" | "situational" | "boots" | null
+  >(null);
+
   useEffect(() => {
     fetchAllItems().then((itemsMap) => {
-      const list = Object.values(itemsMap).filter((item) => {
-        // Filter out obsolete/deprecated or map-specific non-standard items
-        return (
-          item.gold?.purchasable &&
-          item.gold.total > 0 &&
-          !item.name.includes("Quick Charge") &&
-          !item.name.includes("Placeholder")
-        );
-      });
-      list.sort((a, b) => (b.gold?.total || 0) - (a.gold?.total || 0));
-      setAllItemsList(list);
+      setAllItemsList(Object.values(itemsMap));
     });
   }, []);
-
-  const saveAndSetBuilds = (newBuilds: CustomBuildPlan[]) => {
-    setBuilds(newBuilds);
-    saveCustomBuilds(newBuilds);
-  };
 
   const currentChampBuilds = useMemo(() => {
     return builds.filter(
@@ -114,37 +96,55 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
     );
   }, [builds, selectedChamp]);
 
+  const saveAndSetBuilds = (newBuilds: CustomBuildPlan[]) => {
+    setBuilds(newBuilds);
+    saveCustomBuilds(newBuilds);
+  };
+
   const handleDeleteBuild = (id: string) => {
     const updated = builds.filter((b) => b.id !== id);
     saveAndSetBuilds(updated);
   };
 
   const handleCopyDataset = () => {
-    const dataset = exportLlmDataset(builds);
-    navigator.clipboard.writeText(dataset);
+    const jsonl = exportLlmDataset(builds);
+    navigator.clipboard.writeText(jsonl);
     setCopiedDataset(true);
-    setTimeout(() => setCopiedDataset(false), 2500);
+    setTimeout(() => setCopiedDataset(false), 2000);
   };
 
   const handleDownloadDataset = () => {
-    const dataset = exportLlmDataset(builds);
-    const blob = new Blob([dataset], { type: "application/jsonl" });
+    const jsonl = exportLlmDataset(builds);
+    const blob = new Blob([jsonl], { type: "application/x-jsonlines" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `league_build_predictor_dataset_${Date.now()}.jsonl`;
+    a.download = `league_build_dataset_${Date.now()}.jsonl`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const resetForm = () => {
+    setFormTitle("");
+    setFormRole("BOTTOM");
+    setFormThreats(["HEAVY_ARMOR"]);
+    setFormSynergies([]);
+    setFormStarting([]);
+    setFormCore([]);
+    setFormSituational([]);
+    setFormBoots([]);
+    setFormNotes("");
+    setFormReasoning("");
   };
 
   const handleSaveBuild = () => {
     if (!formTitle.trim()) return;
 
     const newBuild: CustomBuildPlan = {
-      id: `${selectedChamp.toLowerCase()}-${Date.now()}`,
+      id: `build_${Date.now()}`,
       championName: selectedChamp,
-      title: formTitle.trim(),
       role: formRole,
+      title: formTitle.trim(),
       enemyThreats: formThreats,
       allySynergies: formSynergies,
       startingItemIds: formStarting,
@@ -161,41 +161,25 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
     resetForm();
   };
 
-  const resetForm = () => {
-    setFormTitle("");
-    setFormThreats(["HEAVY_ARMOR"]);
-    setFormSynergies(["ENCHANTER_PEEL"]);
-    setFormStarting([]);
-    setFormCore([]);
-    setFormSituational([]);
-    setFormBoots([]);
-    setFormNotes("");
-    setFormReasoning("");
-    setActiveItemSlotType(null);
-  };
-
-  const toggleThreat = (threat: EnemyThreatArchetype) => {
+  const toggleThreat = (t: EnemyThreatArchetype) => {
     setFormThreats((prev) =>
-      prev.includes(threat) ? prev.filter((t) => t !== threat) : [...prev, threat]
+      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
     );
   };
 
-  const toggleSynergy = (synergy: AllySynergyArchetype) => {
+  const toggleSynergy = (s: AllySynergyArchetype) => {
     setFormSynergies((prev) =>
-      prev.includes(synergy) ? prev.filter((s) => s !== synergy) : [...prev, synergy]
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
     );
   };
 
-  const addItemToSlot = (itemId: number) => {
-    if (activeItemSlotType === "starting") {
-      setFormStarting((prev) => (prev.includes(itemId) ? prev : [...prev, itemId]));
-    } else if (activeItemSlotType === "core") {
-      setFormCore((prev) => (prev.includes(itemId) ? prev : [...prev, itemId]));
-    } else if (activeItemSlotType === "situational") {
-      setFormSituational((prev) => (prev.includes(itemId) ? prev : [...prev, itemId]));
-    } else if (activeItemSlotType === "boots") {
-      setFormBoots((prev) => (prev.includes(itemId) ? prev : [...prev, itemId]));
-    }
+  const addItemToSlot = (id: number) => {
+    if (!activeSlotPicker) return;
+    if (activeSlotPicker === "starting") setFormStarting((prev) => [...prev, id]);
+    if (activeSlotPicker === "core") setFormCore((prev) => [...prev, id]);
+    if (activeSlotPicker === "situational") setFormSituational((prev) => [...prev, id]);
+    if (activeSlotPicker === "boots") setFormBoots((prev) => [...prev, id]);
+    setActiveSlotPicker(null);
   };
 
   const removeItemFromSlot = (slot: "starting" | "core" | "situational" | "boots", id: number) => {
@@ -214,44 +198,43 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
   }, [allItemsList, itemSearchQuery]);
 
   return (
-    <div className="space-y-6 animate-in fade-in">
-      {/* Top Banner & AI Exporter */}
-      <div className="bg-gradient-to-r from-riot-card via-riot-surface to-riot-card border border-riot-border rounded-2xl p-5 shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="space-y-4 animate-in fade-in font-mono">
+      {/* Top Banner & Exporter */}
+      <div className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0e14] rounded p-4 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2.5">
-            <Package className="w-5 h-5 text-riot-accent" />
-            <h2 className="text-lg font-bold text-slate-100 uppercase tracking-wide">
-              Situational Build Strategist & Item Pool
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4 text-riot-red" />
+            <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
+              Situational Build Matrix
             </h2>
           </div>
-          <p className="text-xs text-slate-400 mt-1 max-w-xl">
-            Design targeted item spikes and situational counters for each champion based on enemy
-            threats and team synergies. Formatted for future AI build prediction training.
+          <p className="text-xs text-neutral-400 mt-0.5 max-w-xl">
+            Configure counter itemization matrices by enemy threat profile and team composition.
           </p>
         </div>
 
-        {/* LLM Exporter Actions */}
+        {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleCopyDataset}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-riot-surface border border-riot-border text-slate-300 hover:text-white text-xs font-semibold hover:border-riot-accent transition-all cursor-pointer"
-            title="Copy all custom build scenarios in JSONL format for LLM prompt training"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-riot-red text-xs font-semibold transition-all cursor-pointer"
+            title="Copy JSONL dataset"
           >
             {copiedDataset ? (
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <Check className="w-3.5 h-3.5 text-emerald-500" />
             ) : (
-              <Copy className="w-3.5 h-3.5 text-riot-accent" />
+              <Copy className="w-3.5 h-3.5" />
             )}
-            <span>{copiedDataset ? "Dataset Copied!" : "Copy LLM JSONL"}</span>
+            <span>{copiedDataset ? "Copied" : "Copy JSONL"}</span>
           </button>
 
           <button
             onClick={handleDownloadDataset}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-riot-surface border border-riot-border text-slate-300 hover:text-white text-xs font-semibold hover:border-riot-accent transition-all cursor-pointer"
-            title="Download JSONL dataset file"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-riot-red text-xs font-semibold transition-all cursor-pointer"
+            title="Export JSONL file"
           >
-            <Download className="w-3.5 h-3.5 text-riot-gold" />
-            <span>Export Dataset</span>
+            <Download className="w-3.5 h-3.5" />
+            <span>Export</span>
           </button>
 
           <button
@@ -259,16 +242,16 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
               resetForm();
               setIsModalOpen(true);
             }}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-riot-accent text-white text-xs font-bold shadow-neon-pink hover:bg-pink-600 active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-riot-red text-white text-xs font-bold hover:bg-riot-redHover active:scale-95 transition-all cursor-pointer shadow-sm"
           >
-            <Plus className="w-4 h-4" />
-            <span>Create Custom Build</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>New Build</span>
           </button>
         </div>
       </div>
 
-      {/* Champion Tabs Selector from Champion Pool */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+      {/* Champion Tabs Selector */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 custom-scrollbar">
         {pool.map((c) => {
           const isSelected = selectedChamp.toLowerCase() === c.championName.toLowerCase();
           const count = builds.filter(
@@ -279,13 +262,13 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
             <button
               key={`${c.championName}-${c.role}`}
               onClick={() => setSelectedChamp(c.championName)}
-              className={`flex items-center gap-2.5 px-4 py-2 rounded-2xl border transition-all shrink-0 cursor-pointer ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-sm border transition-all shrink-0 cursor-pointer text-xs ${
                 isSelected
-                  ? "bg-gradient-to-r from-pink-500/25 to-indigo-500/25 border-pink-500/50 shadow-neon-pink text-slate-100"
-                  : "bg-riot-card/80 border-riot-border text-slate-400 hover:text-slate-200 hover:bg-riot-surface"
+                  ? "bg-riot-red text-white border-riot-red font-bold"
+                  : "bg-white dark:bg-[#0c0e14] border-neutral-300 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200"
               }`}
             >
-              <div className="w-7 h-7 rounded-xl overflow-hidden border border-riot-border/70 shrink-0">
+              <div className="w-5 h-5 rounded-none overflow-hidden shrink-0">
                 <img
                   src={getChampionIconUrl(c.championName)}
                   alt={c.championName}
@@ -293,10 +276,10 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
                 />
               </div>
               <div className="text-left">
-                <div className="text-xs font-bold leading-tight">{c.championName}</div>
-                <div className="text-[10px] text-slate-400 font-mono">
-                  {count} {count === 1 ? "build" : "builds"}
-                </div>
+                <span className="leading-tight">{c.championName}</span>
+                <span className="text-[10px] opacity-75 ml-1 font-mono">
+                  ({count})
+                </span>
               </div>
             </button>
           );
@@ -305,37 +288,37 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
 
       {/* Build Plans for Selected Champion */}
       {currentChampBuilds.length === 0 ? (
-        <div className="py-16 text-center border border-dashed border-riot-border rounded-2xl bg-riot-card/30 p-6 space-y-3">
-          <Bot className="w-12 h-12 text-slate-600 mx-auto" />
-          <h3 className="text-base font-bold text-slate-200">
-            No situational builds created for {selectedChamp} yet
+        <div className="py-12 text-center border border-dashed border-neutral-300 dark:border-neutral-700 rounded-sm bg-white dark:bg-[#0c0e14] p-6 space-y-2">
+          <Bot className="w-8 h-8 text-neutral-400 mx-auto" />
+          <h3 className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
+            No situational scenarios configured for {selectedChamp}
           </h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Create custom build branches based on who you're playing against (e.g. Tank Busters, Anti-Heal, Magic Resist) so you're always prepared in champion select.
+          <p className="text-[11px] text-neutral-400 max-w-md mx-auto">
+            Build situational loadouts based on enemy team composition (e.g. Tank Busters, Magic Resist, Healing Cut).
           </p>
           <button
             onClick={() => {
               resetForm();
               setIsModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-riot-accent text-white text-xs font-bold shadow-neon-pink"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-riot-red text-white text-xs font-bold"
           >
-            <Plus className="w-4 h-4" />
-            <span>Create First Build Plan</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>Create First Plan</span>
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {currentChampBuilds.map((b) => (
             <div
               key={b.id}
-              className="bg-riot-card/85 border border-riot-border rounded-2xl p-5 shadow-lg backdrop-blur-md space-y-4 flex flex-col justify-between"
+              className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0e14] rounded p-3.5 shadow-sm space-y-3 flex flex-col justify-between"
             >
-              <div className="space-y-3.5">
+              <div className="space-y-2.5">
                 {/* Build Header */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden border border-riot-border shrink-0">
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 bg-neutral-900 shrink-0">
                       <img
                         src={getChampionIconUrl(b.championName)}
                         alt={b.championName}
@@ -343,8 +326,8 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
                       />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-slate-100">{b.title}</h3>
-                      <span className="text-[11px] font-mono text-slate-400">
+                      <h3 className="text-xs font-bold text-neutral-900 dark:text-neutral-100">{b.title}</h3>
+                      <span className="text-[10px] text-neutral-400">
                         {b.championName} • {b.role}
                       </span>
                     </div>
@@ -352,25 +335,23 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
 
                   <button
                     onClick={() => handleDeleteBuild(b.id)}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                    className="p-1 rounded-sm text-neutral-400 hover:text-riot-red hover:bg-riot-red/10 transition-colors"
                     title="Delete Build"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                {/* Matchup Archetype Tags */}
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 w-16">
-                      Enemy:
-                    </span>
+                {/* Archetype Tags */}
+                <div className="space-y-1 text-[10px]">
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="font-bold uppercase text-neutral-400 w-14">Enemy:</span>
                     {b.enemyThreats.map((threat) => {
                       const meta = ENEMY_THREAT_LABELS[threat];
                       return (
                         <span
                           key={threat}
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${meta.color}`}
+                          className={`font-bold px-1.5 py-0.2 rounded-sm border ${meta.color}`}
                         >
                           {meta.label}
                         </span>
@@ -379,16 +360,14 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
                   </div>
 
                   {b.allySynergies.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 w-16">
-                        Ally:
-                      </span>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span className="font-bold uppercase text-neutral-400 w-14">Ally:</span>
                       {b.allySynergies.map((syn) => {
                         const meta = ALLY_SYNERGY_LABELS[syn];
                         return (
                           <span
                             key={syn}
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${meta.color}`}
+                            className={`font-bold px-1.5 py-0.2 rounded-sm border ${meta.color}`}
                           >
                             {meta.label}
                           </span>
@@ -398,20 +377,20 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
                   )}
                 </div>
 
-                {/* Items Sections with Live Tooltips */}
-                <div className="space-y-2.5 pt-1">
+                {/* Items Sections */}
+                <div className="space-y-2 pt-1">
                   {/* Core Spikes */}
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-cyan-300 tracking-wider">
-                      Core Spikes (1st, 2nd, 3rd Item)
+                    <span className="text-[9px] uppercase font-bold text-neutral-500 tracking-wider">
+                      Core Spikes
                     </span>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-1.5 mt-0.5">
                       {b.coreItemIds.map((id) => (
-                        <ItemTooltip key={id} itemId={id} size="md" />
+                        <ItemTooltip key={id} itemId={id} size="sm" />
                       ))}
                       {b.bootItemIds.map((id) => (
                         <div key={id} className="ml-1">
-                          <ItemTooltip itemId={id} size="md" />
+                          <ItemTooltip itemId={id} size="sm" />
                         </div>
                       ))}
                     </div>
@@ -420,12 +399,12 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
                   {/* Situational Counters */}
                   {b.situationalItemIds.length > 0 && (
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-amber-300 tracking-wider">
-                        Situational Counters (4th, 5th, 6th Slot)
+                      <span className="text-[9px] uppercase font-bold text-amber-500 tracking-wider">
+                        Situational Counters
                       </span>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-1.5 mt-0.5">
                         {b.situationalItemIds.map((id) => (
-                          <ItemTooltip key={id} itemId={id} size="md" />
+                          <ItemTooltip key={id} itemId={id} size="sm" />
                         ))}
                       </div>
                     </div>
@@ -434,39 +413,37 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
                   {/* Starting Items */}
                   {b.startingItemIds.length > 0 && (
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                        Starting Items
+                      <span className="text-[9px] uppercase font-bold text-neutral-400 tracking-wider">
+                        Starters
                       </span>
-                      <div className="flex items-center gap-1.5 mt-1">
+                      <div className="flex items-center gap-1 mt-0.5">
                         {b.startingItemIds.map((id) => (
-                          <ItemTooltip key={id} itemId={id} size="sm" />
+                          <ItemTooltip key={id} itemId={id} size="xs" />
                         ))}
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* AI Reasoning Prompt / Strategy Notes */}
+                {/* Tactical Notes */}
                 {(b.llmReasoningPrompt || b.runesOrNotes) && (
-                  <div className="bg-riot-surface/50 border border-riot-border/50 rounded-xl p-3 text-xs space-y-1.5 font-sans leading-relaxed">
+                  <div className="bg-neutral-50 dark:bg-[#12151f] border border-neutral-200 dark:border-neutral-800 rounded-sm p-2 text-[11px] space-y-1 leading-relaxed">
                     {b.runesOrNotes && (
-                      <div className="text-slate-300">
-                        <strong className="text-pink-300">Runes / Playstyle:</strong>{" "}
-                        {b.runesOrNotes}
+                      <div className="text-neutral-700 dark:text-neutral-300">
+                        <strong className="text-neutral-900 dark:text-neutral-100 font-bold">Notes:</strong> {b.runesOrNotes}
                       </div>
                     )}
                     {b.llmReasoningPrompt && (
-                      <div className="text-slate-400">
-                        <strong className="text-riot-gold font-mono">AI Strategic Reasoning:</strong>{" "}
-                        {b.llmReasoningPrompt}
+                      <div className="text-neutral-500 dark:text-neutral-400">
+                        <strong className="text-amber-500 font-bold">Tactics:</strong> {b.llmReasoningPrompt}
                       </div>
                     )}
                   </div>
                 )}
               </div>
 
-              <div className="text-[10px] font-mono text-slate-500 pt-2 border-t border-riot-border/30">
-                Last updated {new Date(b.updatedAt).toLocaleDateString()}
+              <div className="text-[9px] text-neutral-400 pt-1.5 border-t border-neutral-200 dark:border-neutral-800">
+                Updated {new Date(b.updatedAt).toLocaleDateString()}
               </div>
             </div>
           ))}
@@ -475,46 +452,43 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
 
       {/* Create / Edit Custom Build Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-          <div className="bg-riot-card border border-riot-border w-full max-w-2xl max-h-[90vh] rounded-3xl p-6 shadow-2xl flex flex-col space-y-4 overflow-hidden">
-            <div className="flex items-center justify-between pb-3 border-b border-riot-border/60">
-              <div className="flex items-center gap-2.5">
-                <Sparkles className="w-5 h-5 text-riot-accent" />
-                <h3 className="text-base font-bold text-slate-100">
-                  Create Custom Build Scenario ({selectedChamp})
-                </h3>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white dark:bg-[#0e1118] border border-neutral-300 dark:border-neutral-700 w-full max-w-2xl max-h-[90vh] rounded p-5 shadow-xl flex flex-col space-y-3 overflow-hidden font-mono text-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-neutral-200 dark:border-neutral-800">
+              <span className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
+                Create Scenario ({selectedChamp})
+              </span>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
               >
                 ✕
               </button>
             </div>
 
-            <div className="overflow-y-auto space-y-4 pr-1 custom-scrollbar flex-1">
+            <div className="overflow-y-auto space-y-3 pr-1 custom-scrollbar flex-1">
               {/* Build Title & Role */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="sm:col-span-2">
-                  <label className="text-xs font-bold text-slate-300 uppercase">
-                    Build Scenario Title
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase">
+                    Scenario Title
                   </label>
                   <input
                     type="text"
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
-                    placeholder="e.g. Anti-Tank Shred, Magic Resist Shielding, Anti-Burst..."
-                    className="mt-1 w-full bg-riot-darkest border border-riot-border rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-riot-accent"
+                    placeholder="e.g. Anti-Tank Shred, Magic Resist Shielding..."
+                    className="mt-1 w-full bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded px-2.5 py-1.5 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-riot-red"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-300 uppercase">
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase">
                     Role Position
                   </label>
                   <select
                     value={formRole}
                     onChange={(e) => setFormRole(e.target.value as ChampionRole)}
-                    className="mt-1 w-full bg-riot-darkest border border-riot-border rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-riot-accent"
+                    className="mt-1 w-full bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded px-2 py-1.5 text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-riot-red"
                   >
                     <option value="BOTTOM">Bot Carry (ADC)</option>
                     <option value="UTILITY">Support</option>
@@ -526,12 +500,12 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
               </div>
 
               {/* Enemy Threats Tags */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 uppercase flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-amber-400" />
-                  Enemy Matchup Threats (Select applicable):
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-neutral-500 uppercase flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-amber-500" />
+                  Enemy Matchup Threats:
                 </label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1">
                   {(Object.keys(ENEMY_THREAT_LABELS) as EnemyThreatArchetype[]).map((t) => {
                     const isSelected = formThreats.includes(t);
                     return (
@@ -539,10 +513,10 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
                         key={t}
                         type="button"
                         onClick={() => toggleThreat(t)}
-                        className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-all ${
+                        className={`text-[10px] px-2 py-0.5 rounded-sm border font-semibold transition-all ${
                           isSelected
-                            ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm"
-                            : "bg-riot-darkest text-slate-400 border-riot-border hover:text-slate-200"
+                            ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/40"
+                            : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 border-neutral-300 dark:border-neutral-700"
                         }`}
                       >
                         {ENEMY_THREAT_LABELS[t].label}
@@ -553,12 +527,12 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
               </div>
 
               {/* Ally Synergies Tags */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 uppercase flex items-center gap-1.5">
-                  <HeartHandshake className="w-3.5 h-3.5 text-pink-400" />
-                  Ally Composition Synergy (Select applicable):
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-neutral-500 uppercase flex items-center gap-1">
+                  <HeartHandshake className="w-3 h-3 text-blue-500" />
+                  Ally Composition Synergy:
                 </label>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1">
                   {(Object.keys(ALLY_SYNERGY_LABELS) as AllySynergyArchetype[]).map((s) => {
                     const isSelected = formSynergies.includes(s);
                     return (
@@ -566,10 +540,10 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
                         key={s}
                         type="button"
                         onClick={() => toggleSynergy(s)}
-                        className={`text-xs px-2.5 py-1 rounded-lg border font-semibold transition-all ${
+                        className={`text-[10px] px-2 py-0.5 rounded-sm border font-semibold transition-all ${
                           isSelected
-                            ? "bg-pink-500/20 text-pink-300 border-pink-500/50 shadow-sm"
-                            : "bg-riot-darkest text-slate-400 border-riot-border hover:text-slate-200"
+                            ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/40"
+                            : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500 border-neutral-300 dark:border-neutral-700"
                         }`}
                       >
                         {ALLY_SYNERGY_LABELS[s].label}
@@ -579,217 +553,196 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
                 </div>
               </div>
 
-              {/* Interactive Item Pickers */}
-              <div className="space-y-3 bg-riot-surface/60 border border-riot-border rounded-2xl p-4">
-                <span className="text-xs font-bold text-slate-200 uppercase tracking-wide">
-                  Item Inventory Setup (Click "+ Add" to browse items)
-                </span>
-
-                {/* Core Items Row */}
-                <div>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-cyan-300 font-bold">Core Items (1st–3rd Item Spikes)</span>
+              {/* Item Slots Config */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                {/* Core Items */}
+                <div className="p-2.5 rounded-sm bg-neutral-50 dark:bg-[#12151f] border border-neutral-200 dark:border-neutral-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase text-neutral-500">Core Spikes</span>
                     <button
                       type="button"
-                      onClick={() => setActiveItemSlotType("core")}
-                      className="text-xs font-bold text-riot-accent hover:underline"
+                      onClick={() => setActiveSlotPicker("core")}
+                      className="text-[10px] text-riot-red font-bold hover:underline"
                     >
-                      + Add Core Item
+                      + Add Item
                     </button>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 min-h-[38px] p-1.5 bg-riot-darkest rounded-xl border border-riot-border">
-                    {formCore.length === 0 ? (
-                      <span className="text-xs text-slate-500 pl-2">No core items added yet</span>
-                    ) : (
-                      formCore.map((id) => (
-                        <div key={id} className="relative group">
-                          <ItemTooltip itemId={id} size="md" />
-                          <button
-                            type="button"
-                            onClick={() => removeItemFromSlot("core", id)}
-                            className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Situational Items Row */}
-                <div>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-amber-300 font-bold">Situational Counters (4th–6th Slot)</span>
-                    <button
-                      type="button"
-                      onClick={() => setActiveItemSlotType("situational")}
-                      className="text-xs font-bold text-riot-accent hover:underline"
-                    >
-                      + Add Situational Counter
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 min-h-[38px] p-1.5 bg-riot-darkest rounded-xl border border-riot-border">
-                    {formSituational.length === 0 ? (
-                      <span className="text-xs text-slate-500 pl-2">
-                        No situational items added yet
-                      </span>
-                    ) : (
-                      formSituational.map((id) => (
-                        <div key={id} className="relative group">
-                          <ItemTooltip itemId={id} size="md" />
-                          <button
-                            type="button"
-                            onClick={() => removeItemFromSlot("situational", id)}
-                            className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Boots and Starting Row */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-slate-300 font-bold">Boots Option</span>
-                      <button
-                        type="button"
-                        onClick={() => setActiveItemSlotType("boots")}
-                        className="text-xs font-bold text-riot-accent hover:underline"
-                      >
-                        + Add Boots
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5 min-h-[38px] p-1.5 bg-riot-darkest rounded-xl border border-riot-border">
-                      {formBoots.map((id) => (
-                        <div key={id} className="relative group">
-                          <ItemTooltip itemId={id} size="md" />
-                          <button
-                            type="button"
-                            onClick={() => removeItemFromSlot("boots", id)}
-                            className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-slate-300 font-bold">Starting Items</span>
-                      <button
-                        type="button"
-                        onClick={() => setActiveItemSlotType("starting")}
-                        className="text-xs font-bold text-riot-accent hover:underline"
-                      >
-                        + Add Starting
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5 min-h-[38px] p-1.5 bg-riot-darkest rounded-xl border border-riot-border">
-                      {formStarting.map((id) => (
-                        <div key={id} className="relative group">
-                          <ItemTooltip itemId={id} size="md" />
-                          <button
-                            type="button"
-                            onClick={() => removeItemFromSlot("starting", id)}
-                            className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Item Catalog Browser popup when slot is active */}
-                {activeItemSlotType && (
-                  <div className="p-3 bg-riot-darkest border border-riot-accent/40 rounded-xl space-y-2 mt-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-200">
-                        Select item for:{" "}
-                        <strong className="text-pink-300 uppercase">
-                          {activeItemSlotType}
-                        </strong>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setActiveItemSlotType(null)}
-                        className="text-slate-400 hover:text-white text-xs"
-                      >
-                        Done Selecting
-                      </button>
-                    </div>
-
-                    <div className="relative">
-                      <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={itemSearchQuery}
-                        onChange={(e) => setItemSearchQuery(e.target.value)}
-                        placeholder="Search items (e.g. Infinity Edge, Mortal Reminder)..."
-                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-riot-surface border border-riot-border rounded-lg text-slate-200 focus:outline-none focus:border-riot-accent"
-                      />
-                    </div>
-
-                    <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1 custom-scrollbar">
-                      {filteredItems.map((item) => (
-                        <div
-                          key={item.id}
-                          onClick={() => addItemToSlot(item.id)}
-                          className="cursor-pointer hover:scale-110 transition-transform"
-                          title={`${item.name} (${item.gold?.total}g)`}
+                  <div className="flex flex-wrap gap-1 min-h-[30px]">
+                    {formCore.map((id) => (
+                      <div key={id} className="relative group">
+                        <ItemTooltip itemId={id} size="sm" />
+                        <button
+                          type="button"
+                          onClick={() => removeItemFromSlot("core", id)}
+                          className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-riot-red text-white rounded-full text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100"
                         >
-                          <ItemTooltip itemId={item.id} size="sm" />
-                        </div>
-                      ))}
-                    </div>
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+
+                {/* Boots */}
+                <div className="p-2.5 rounded-sm bg-neutral-50 dark:bg-[#12151f] border border-neutral-200 dark:border-neutral-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase text-neutral-500">Boots</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSlotPicker("boots")}
+                      className="text-[10px] text-riot-red font-bold hover:underline"
+                    >
+                      + Add Boots
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1 min-h-[30px]">
+                    {formBoots.map((id) => (
+                      <div key={id} className="relative group">
+                        <ItemTooltip itemId={id} size="sm" />
+                        <button
+                          type="button"
+                          onClick={() => removeItemFromSlot("boots", id)}
+                          className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-riot-red text-white rounded-full text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Situational Items */}
+                <div className="p-2.5 rounded-sm bg-neutral-50 dark:bg-[#12151f] border border-neutral-200 dark:border-neutral-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase text-neutral-500">Situational</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSlotPicker("situational")}
+                      className="text-[10px] text-riot-red font-bold hover:underline"
+                    >
+                      + Add Item
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1 min-h-[30px]">
+                    {formSituational.map((id) => (
+                      <div key={id} className="relative group">
+                        <ItemTooltip itemId={id} size="sm" />
+                        <button
+                          type="button"
+                          onClick={() => removeItemFromSlot("situational", id)}
+                          className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-riot-red text-white rounded-full text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Starters */}
+                <div className="p-2.5 rounded-sm bg-neutral-50 dark:bg-[#12151f] border border-neutral-200 dark:border-neutral-800 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase text-neutral-500">Starters</span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSlotPicker("starting")}
+                      className="text-[10px] text-riot-red font-bold hover:underline"
+                    >
+                      + Add Starter
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1 min-h-[30px]">
+                    {formStarting.map((id) => (
+                      <div key={id} className="relative group">
+                        <ItemTooltip itemId={id} size="sm" />
+                        <button
+                          type="button"
+                          onClick={() => removeItemFromSlot("starting", id)}
+                          className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-riot-red text-white rounded-full text-[9px] flex items-center justify-center opacity-0 group-hover:opacity-100"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              {/* Strategy & LLM Reasoning Textareas */}
-              <div className="space-y-3">
+              {/* Item Picker Popup if active */}
+              {activeSlotPicker && (
+                <div className="p-2.5 rounded-sm border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-[#151924] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase text-neutral-700 dark:text-neutral-300">
+                      Select Item for {activeSlotPicker}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSlotPicker(null)}
+                      className="text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={itemSearchQuery}
+                      onChange={(e) => setItemSearchQuery(e.target.value)}
+                      placeholder="Search items..."
+                      className="w-full pl-8 pr-3 py-1 text-xs bg-white dark:bg-[#0c0e14] border border-neutral-300 dark:border-neutral-700 rounded text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-riot-red"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto custom-scrollbar pt-1">
+                    {filteredItems.map((it) => (
+                      <div
+                        key={it.id}
+                        onClick={() => addItemToSlot(it.id)}
+                        className="cursor-pointer hover:scale-105 transition-transform"
+                      >
+                        <ItemTooltip itemId={it.id} size="sm" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              <div className="space-y-2">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 uppercase">
-                    Runes & Playstyle Notes
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase">
+                    Playstyle & Runes
                   </label>
                   <textarea
                     value={formNotes}
                     onChange={(e) => setFormNotes(e.target.value)}
-                    placeholder="e.g. Lethal Tempo or Fleet Footwork. Take Cut Down against high HP frontlines..."
+                    placeholder="e.g. Lethal Tempo or Fleet Footwork..."
                     rows={2}
-                    className="mt-1 w-full bg-riot-darkest border border-riot-border rounded-xl p-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-riot-accent resize-none"
+                    className="mt-1 w-full bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded p-2 text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 focus:outline-none focus:border-riot-red resize-none"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-riot-gold uppercase flex items-center gap-1.5">
-                    <Bot className="w-3.5 h-3.5" />
-                    AI Strategic Reasoning (For LLM Fine-Tuning & Prediction)
+                  <label className="text-[10px] font-bold text-neutral-500 uppercase flex items-center gap-1">
+                    <Bot className="w-3 h-3 text-amber-500" />
+                    Tactical Reasoning
                   </label>
                   <textarea
                     value={formReasoning}
                     onChange={(e) => setFormReasoning(e.target.value)}
-                    placeholder="e.g. When facing 2+ tanks stacking armor, rush Lord Dominik's Regards 2nd instead of Collector to prevent mid-game damage dropoff."
+                    placeholder="e.g. When facing heavy tanks, prioritize Lord Dominik's Regards 2nd."
                     rows={2}
-                    className="mt-1 w-full bg-riot-darkest border border-riot-border rounded-xl p-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-riot-gold resize-none"
+                    className="mt-1 w-full bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded p-2 text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 focus:outline-none focus:border-riot-red resize-none"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-riot-border/50">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-neutral-200 dark:border-neutral-800">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white"
+                className="px-3 py-1.5 rounded-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
               >
                 Cancel
               </button>
@@ -797,9 +750,9 @@ export const ItemBuildPlannerTab: React.FC<ItemBuildPlannerTabProps> = ({
                 type="button"
                 onClick={handleSaveBuild}
                 disabled={!formTitle.trim()}
-                className="px-5 py-2 rounded-xl bg-riot-accent text-white text-xs font-bold shadow-neon-pink disabled:opacity-50"
+                className="px-4 py-1.5 rounded bg-riot-red text-white font-bold hover:bg-riot-redHover disabled:opacity-50"
               >
-                Save Build Scenario
+                Save Plan
               </button>
             </div>
           </div>

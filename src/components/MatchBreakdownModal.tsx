@@ -368,62 +368,62 @@ export const MatchBreakdownModal: React.FC<MatchBreakdownModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/85 backdrop-blur-md animate-in fade-in">
-      <div className="bg-riot-card border border-riot-border w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1450px] max-h-[94vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-5 bg-black/75 backdrop-blur-sm animate-in fade-in font-mono text-xs">
+      <div className="bg-white dark:bg-[#0c0e14] border border-neutral-300 dark:border-neutral-700 w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1450px] max-h-[94vh] rounded shadow-2xl flex flex-col overflow-hidden relative">
         {/* Top Header Banner */}
         <div
-          className={`px-6 py-4 flex flex-wrap items-center justify-between gap-3 border-b ${
+          className={`px-5 py-3 flex flex-wrap items-center justify-between gap-3 border-b ${
             isWin
-              ? "border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-riot-surface to-riot-surface"
-              : "border-rose-500/30 bg-gradient-to-r from-rose-950/40 via-riot-surface to-riot-surface"
+              ? "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20"
+              : "border-riot-red/30 bg-riot-red/5 dark:bg-red-950/20"
           }`}
         >
-          <div className="flex items-center gap-4">
-            <div className="relative w-12 h-12 rounded-2xl overflow-hidden border-2 border-riot-gold/80 shadow-neon-gold shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="relative w-10 h-10 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 bg-neutral-900 shrink-0">
               <img
                 src={getChampionIconUrl(target.championName)}
                 alt={target.championName}
                 className="w-full h-full object-cover"
               />
-              <span className="absolute bottom-0 right-0 bg-black/80 text-[10px] font-bold px-1 rounded-tl text-slate-200">
+              <span className="absolute bottom-0 right-0 bg-neutral-950 text-[8px] font-bold px-0.5 text-neutral-200">
                 Lv{target.champLevel}
               </span>
             </div>
 
             <div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <span
-                  className={`text-sm font-black uppercase tracking-wider px-2 py-0.5 rounded-lg ${
+                  className={`text-xs font-black uppercase tracking-wider px-1.5 py-0.2 rounded-sm ${
                     isWin
-                      ? "bg-emerald-500/20 text-neon-win border border-emerald-500/40"
-                      : "bg-rose-500/20 text-neon-loss border border-rose-500/40"
+                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40"
+                      : "bg-riot-red/15 text-riot-red border border-riot-red/40"
                   }`}
                 >
                   {isWin ? "Victory" : "Defeat"}
                 </span>
-                <h2 className="text-lg font-bold text-slate-100">
-                  {target.championName} Full Match Breakdown
+                <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
+                  {target.championName} Performance Telemetry
                 </h2>
               </div>
-              <div className="flex items-center gap-3 text-xs text-slate-400 mt-1 font-mono">
-                <span className="font-sans text-slate-300">{match.gameMode}</span>
+              <div className="flex items-center gap-2.5 text-[11px] text-neutral-500 dark:text-neutral-400 mt-0.5 tabular-nums">
+                <span className="text-neutral-700 dark:text-neutral-300 font-semibold">{match.gameMode}</span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-slate-500" />
+                  <Clock className="w-3 h-3 text-neutral-400" />
                   {durationMin}m {durationSec}s
                 </span>
                 <span>•</span>
                 <span>
-                  KDA: <strong className="text-slate-100">{target.kills}</strong>/
-                  <strong className="text-rose-400">{target.deaths}</strong>/
-                  <strong className="text-slate-200">{target.assists}</strong> ({target.kda.toFixed(2)})
+                  KDA: <strong className="text-neutral-800 dark:text-neutral-200">{target.kills}</strong>/
+                  <strong className="text-riot-red">{target.deaths}</strong>/
+                  <strong className="text-neutral-800 dark:text-neutral-200">{target.assists}</strong> ({target.kda.toFixed(2)})
                 </span>
               </div>
             </div>
           </div>
 
           {/* Action buttons (Refresh & Close) */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {apiKey && regionalRouting && (
               <button
                 onClick={() => {
@@ -431,90 +431,90 @@ export const MatchBreakdownModal: React.FC<MatchBreakdownModalProps> = ({
                   loadTimeline(match, true);
                 }}
                 disabled={isRefreshingMatch || isLoadingTimeline}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-riot-surface border border-riot-border text-slate-300 hover:text-white hover:border-riot-accent transition-all disabled:opacity-50"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-sm text-xs font-semibold bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-riot-red transition-all disabled:opacity-50"
                 title="Refresh complete match details & timeline from Riot API"
               >
                 {isRefreshingMatch || isLoadingTimeline ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-riot-accent" />
+                  <Loader2 className="w-3 h-3 animate-spin text-riot-red" />
                 ) : (
-                  <RefreshCw className="w-3.5 h-3.5 text-riot-accent" />
+                  <RefreshCw className="w-3 h-3 text-riot-red" />
                 )}
-                <span>Refresh Data</span>
+                <span>Sync API</span>
               </button>
             )}
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+              className="p-1 rounded-sm text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
               title="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         {/* Sub-tab Navigation Bar */}
-        <div className="px-6 py-2.5 bg-riot-surface/90 border-b border-riot-border flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
+        <div className="px-5 py-2 bg-neutral-50 dark:bg-[#11141c] border-b border-neutral-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setActiveTab("overview")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-bold transition-all ${
                 activeTab === "overview"
-                  ? "bg-riot-accent text-white shadow-neon-pink"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-riot-surface"
+                  ? "bg-riot-red text-white"
+                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200"
               }`}
             >
-              <Crosshair className="w-3.5 h-3.5" />
-              Combat & Scoreboard
+              <Crosshair className="w-3 h-3" />
+              <span>Combat Scoreboard</span>
             </button>
 
             <button
               onClick={() => setActiveTab("timeline")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-bold transition-all ${
                 activeTab === "timeline"
-                  ? "bg-riot-accent text-white shadow-neon-pink"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-riot-surface"
+                  ? "bg-riot-red text-white"
+                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200"
               }`}
             >
-              <TrendingUp className="w-3.5 h-3.5" />
-              Gold & XP Lead Graph
+              <TrendingUp className="w-3 h-3" />
+              <span>Gold & XP Curve</span>
             </button>
 
             <button
               onClick={() => setActiveTab("killmap")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-bold transition-all ${
                 activeTab === "killmap"
-                  ? "bg-riot-accent text-white shadow-neon-pink"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-riot-surface"
+                  ? "bg-riot-red text-white"
+                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200"
               }`}
             >
-              <MapPin className="w-3.5 h-3.5" />
-              Summoner's Rift Kill Map
+              <MapPin className="w-3 h-3" />
+              <span>Kill Coordinates</span>
             </button>
 
             <button
               onClick={() => setActiveTab("skillorder")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-bold transition-all ${
                 activeTab === "skillorder"
-                  ? "bg-riot-accent text-white shadow-neon-pink"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-riot-surface"
+                  ? "bg-riot-red text-white"
+                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200"
               }`}
             >
-              <Zap className="w-3.5 h-3.5" />
-              Skill Level-Up Order
+              <Zap className="w-3 h-3" />
+              <span>Skill Level Order</span>
             </button>
           </div>
 
           {isLoadingTimeline && (
-            <div className="flex items-center gap-1.5 text-xs text-riot-accent font-mono">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Loading Match Timeline...
+            <div className="flex items-center gap-1 text-[11px] text-riot-red">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Loading Telemetry...
             </div>
           )}
         </div>
 
         {/* Scrollable Modal Content */}
-        <div className="p-6 overflow-y-auto space-y-6 custom-scrollbar flex-1">
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 custom-scrollbar flex-1">
           {timelineNotice && (
             <div className="flex items-center gap-2 p-2.5 rounded-xl bg-riot-surface border border-riot-border text-xs text-slate-300 font-mono">
               <Info className="w-4 h-4 text-riot-gold shrink-0" />

@@ -10,9 +10,8 @@ import {
   Flame,
   ChevronDown,
   ChevronUp,
-  Coins,
   Crown,
-  Sparkles,
+  BarChart2,
 } from "lucide-react";
 
 interface MatchRowProps {
@@ -42,9 +41,9 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
   };
 
   const getKdaBadge = (kda: number) => {
-    if (kda >= 5.0) return "text-riot-gold font-bold";
-    if (kda >= 3.0) return "text-emerald-400 font-bold";
-    return "text-slate-300 font-semibold";
+    if (kda >= 5.0) return "text-amber-500 dark:text-amber-400 font-bold";
+    if (kda >= 3.0) return "text-emerald-600 dark:text-emerald-400 font-bold";
+    return "text-neutral-600 dark:text-neutral-400 font-semibold";
   };
 
   const getQueueName = (queueId?: number, gameMode?: string): string => {
@@ -68,27 +67,23 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
       case 850:
         return "Co-op vs AI";
       case 0:
-        return "Custom Game";
+        return "Custom";
       default:
         if (gameMode === "PRACTICETOOL") return "Practice Tool";
         if (gameMode === "ARAM") return "ARAM";
         if (gameMode === "CHERRY") return "Arena";
-        if (gameMode === "CLASSIC") return "Normal / Custom";
-        return gameMode ? gameMode.charAt(0) + gameMode.slice(1).toLowerCase() : "Normal";
+        if (gameMode === "CLASSIC") return "Normal";
+        return gameMode ? gameMode.charAt(0) + gameMode.slice(1).toLowerCase() : "Match";
     }
   };
 
   const items = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5];
 
-  // Divide participants into Blue Team (100) and Red Team (200)
   const blueTeam = (match.allParticipants || []).filter((x) => x.teamId === 100);
   const redTeam = (match.allParticipants || []).filter((x) => x.teamId === 200);
-
-  // Fallback if allParticipants was missing
   const bluePlayers = blueTeam.length > 0 ? blueTeam : [p];
   const redPlayers = redTeam.length > 0 ? redTeam : [];
 
-  // Find max damage in game to calculate comparative damage bar length
   const maxDamage = Math.max(
     1,
     ...(match.allParticipants || []).map((x) => x.totalDamageDealtToChampions || 0)
@@ -99,43 +94,43 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
 
   return (
     <div
-      className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+      className={`border rounded transition-all duration-150 overflow-hidden ${
         isWin
-          ? "bg-slate-900/60 border-emerald-500/30 hover:border-emerald-500/60"
-          : "bg-slate-900/60 border-rose-500/30 hover:border-rose-500/60"
+          ? "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0e1118]"
+          : "border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0e1118]"
       }`}
     >
       {/* Main Collapsed Card */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="relative px-5 py-3.5 flex flex-col xl:flex-row items-center justify-between gap-4 cursor-pointer hover:bg-slate-800/30 transition-all select-none"
+        className="relative px-4 py-2.5 flex flex-col xl:flex-row items-center justify-between gap-3 cursor-pointer hover:bg-neutral-50 dark:hover:bg-[#121622] transition-colors select-none"
       >
-        {/* Accent side stripe */}
+        {/* Crisp Left Edge Indicator */}
         <div
-          className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-            isWin ? "bg-neon-win shadow-neon-win" : "bg-neon-loss shadow-neon-loss"
+          className={`absolute left-0 top-0 bottom-0 w-1 ${
+            isWin ? "bg-emerald-500" : "bg-riot-red"
           }`}
         />
 
         {/* Section 1: Win/Loss status, queue & duration */}
-        <div className="flex items-center gap-4 w-full xl:w-44">
+        <div className="flex items-center gap-3 w-full xl:w-40 font-mono">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <span
-                className={`text-xs font-black tracking-wider uppercase px-2 py-0.5 rounded ${
+                className={`text-[11px] font-mono font-black uppercase tracking-wider px-1.5 py-0.5 rounded-sm ${
                   isWin
-                    ? "bg-emerald-500/20 text-neon-win border border-emerald-500/40"
-                    : "bg-rose-500/20 text-neon-loss border border-rose-500/40"
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                    : "bg-riot-red/10 text-riot-red border border-riot-red/30"
                 }`}
               >
                 {isWin ? "Victory" : "Defeat"}
               </span>
             </div>
-            <div className="text-xs text-slate-400 mt-1.5">
-              <span className="font-medium text-slate-300">
+            <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1">
+              <span className="font-semibold text-neutral-800 dark:text-neutral-200">
                 {getQueueName(match.queueId, match.gameMode)}
               </span>
-              <div className="text-[11px] text-slate-500">
+              <div className="text-[10px] text-neutral-400">
                 {formatDuration(match.gameDuration)} • {formatTimeAgo(match.gameCreation)}
               </div>
             </div>
@@ -143,31 +138,31 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
         </div>
 
         {/* Section 2: Champion Portrait, Spells & Level */}
-        <div className="flex items-center gap-3 w-full xl:w-48">
+        <div className="flex items-center gap-2.5 w-full xl:w-44">
           <div className="relative">
-            <div className="w-12 h-12 rounded-xl overflow-hidden border border-riot-border bg-riot-darkest">
+            <div className="w-10 h-10 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 bg-neutral-900">
               <img
                 src={getChampionIconUrl(p.championName)}
                 alt={p.championName}
-                className="w-full h-full object-cover scale-105"
+                className="w-full h-full object-cover"
                 loading="lazy"
               />
             </div>
-            <span className="absolute -bottom-1 -right-1 bg-riot-surface border border-riot-border text-slate-300 text-[9px] font-bold px-1 rounded-full">
+            <span className="absolute -bottom-1 -right-1 bg-neutral-900 border border-neutral-700 text-neutral-200 text-[8px] font-mono font-bold px-0.5 rounded-sm">
               {p.champLevel}
             </span>
           </div>
 
           {/* Summoner Spells */}
-          <div className="flex flex-col gap-1">
-            <div className="w-5 h-5 rounded overflow-hidden border border-riot-border bg-riot-darkest">
+          <div className="flex flex-col gap-0.5">
+            <div className="w-4 h-4 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 bg-neutral-900">
               <img
                 src={getSummonerSpellIconUrl(p.summoner1Id)}
                 alt="Spell 1"
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="w-5 h-5 rounded overflow-hidden border border-riot-border bg-riot-darkest">
+            <div className="w-4 h-4 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 bg-neutral-900">
               <img
                 src={getSummonerSpellIconUrl(p.summoner2Id)}
                 alt="Spell 2"
@@ -177,60 +172,59 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
           </div>
 
           <div>
-            <div className="text-sm font-bold text-slate-100 flex items-center gap-1.5">
+            <div className="text-xs font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-1">
               <span>{p.championName}</span>
               {p.turretKills > 0 && (
-                <span title={`${p.turretKills} Turrets Destroyed`}>
-                  <Crown className="w-3 h-3 text-riot-gold" />
+                <span title={`${p.turretKills} Turrets`}>
+                  <Crown className="w-3 h-3 text-amber-500" />
                 </span>
               )}
             </div>
-            <div className="text-[11px] text-slate-400">
-              CS {p.cs} <span className="text-slate-500">({p.csPerMin}/m)</span>
+            <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 tabular-nums">
+              CS {p.cs} <span className="text-neutral-400">({p.csPerMin}/m)</span>
             </div>
           </div>
         </div>
 
         {/* Section 3: KDA & Score */}
-        <div className="flex flex-col items-center xl:items-start w-full xl:w-32">
-          <div className="text-sm font-extrabold text-slate-100 tracking-tight">
-            {p.kills} / <span className="text-neon-loss">{p.deaths}</span> / {p.assists}
+        <div className="flex flex-col items-center xl:items-start w-full xl:w-28 font-mono tabular-nums">
+          <div className="text-xs font-black text-neutral-900 dark:text-neutral-100">
+            {p.kills} / <span className="text-riot-red">{p.deaths}</span> / {p.assists}
           </div>
-          <div className={`text-xs mt-0.5 ${getKdaBadge(p.kda)}`}>
-            {p.kda}:1 <span className="text-[10px] text-slate-400 font-normal">KDA</span>
+          <div className={`text-[10px] mt-0.5 ${getKdaBadge(p.kda)}`}>
+            {p.kda}:1 <span className="text-[9px] text-neutral-400 font-normal">KDA</span>
           </div>
         </div>
 
         {/* Section 4: Items Grid */}
-        <div className="flex items-center gap-1.5 w-full xl:w-auto">
+        <div className="flex items-center gap-1 w-full xl:w-auto">
           {items.map((itemId, idx) => (
-            <ItemTooltip key={idx} itemId={itemId} size="md" />
+            <ItemTooltip key={idx} itemId={itemId} size="sm" />
           ))}
-          <div className="ml-1">
-            <ItemTooltip itemId={p.item6} size="md" isTrinket />
+          <div className="ml-0.5">
+            <ItemTooltip itemId={p.item6} size="sm" isTrinket />
           </div>
         </div>
 
         {/* Section 5: Stats (Damage & Vision) */}
-        <div className="hidden lg:flex items-center gap-4 text-xs text-slate-400 border-l border-riot-border/50 pl-4">
+        <div className="hidden lg:flex items-center gap-3 text-xs font-mono tabular-nums text-neutral-500 dark:text-neutral-400 border-l border-neutral-200 dark:border-neutral-800 pl-3">
           <div className="flex items-center gap-1" title="Damage to champions">
-            <Flame className="w-3.5 h-3.5 text-rose-400" />
+            <Flame className="w-3 h-3 text-riot-red" />
             <span>{p.totalDamageDealtToChampions.toLocaleString()}</span>
           </div>
           <div className="flex items-center gap-1" title="Vision score">
-            <Eye className="w-3.5 h-3.5 text-riot-accent" />
+            <Eye className="w-3 h-3 text-neutral-400" />
             <span>{p.visionScore}</span>
           </div>
         </div>
 
-        {/* Section 6: Mini Teammates / Opponents Column */}
+        {/* Section 6: Mini Rosters */}
         {match.allParticipants && match.allParticipants.length > 0 && (
-          <div className="hidden lg:flex items-center gap-3 border-l border-riot-border/50 pl-4">
-            {/* Blue team 5 champions */}
+          <div className="hidden lg:flex items-center gap-2.5 border-l border-neutral-200 dark:border-neutral-800 pl-3">
             <div className="space-y-0.5">
               {bluePlayers.slice(0, 5).map((pl) => (
-                <div key={pl.puuid} className="flex items-center gap-1.5">
-                  <div className="w-4 h-4 rounded overflow-hidden border border-riot-border bg-riot-darkest flex-shrink-0">
+                <div key={pl.puuid} className="flex items-center gap-1">
+                  <div className="w-3.5 h-3.5 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 bg-neutral-900 shrink-0">
                     <img
                       src={getChampionIconUrl(pl.championName)}
                       alt={pl.championName}
@@ -238,8 +232,8 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
                     />
                   </div>
                   <span
-                    className={`text-[10px] truncate max-w-[65px] ${
-                      pl.puuid === p.puuid ? "text-riot-accent font-bold" : "text-slate-400"
+                    className={`text-[9px] font-mono truncate max-w-[60px] ${
+                      pl.puuid === p.puuid ? "text-riot-red font-bold" : "text-neutral-500"
                     }`}
                   >
                     {pl.riotIdGameName || pl.summonerName}
@@ -248,11 +242,10 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
               ))}
             </div>
 
-            {/* Red team 5 champions */}
             <div className="space-y-0.5">
               {redPlayers.slice(0, 5).map((pl) => (
-                <div key={pl.puuid} className="flex items-center gap-1.5">
-                  <div className="w-4 h-4 rounded overflow-hidden border border-riot-border bg-riot-darkest flex-shrink-0">
+                <div key={pl.puuid} className="flex items-center gap-1">
+                  <div className="w-3.5 h-3.5 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 bg-neutral-900 shrink-0">
                     <img
                       src={getChampionIconUrl(pl.championName)}
                       alt={pl.championName}
@@ -260,8 +253,8 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
                     />
                   </div>
                   <span
-                    className={`text-[10px] truncate max-w-[65px] ${
-                      pl.puuid === p.puuid ? "text-riot-accent font-bold" : "text-slate-400"
+                    className={`text-[9px] font-mono truncate max-w-[60px] ${
+                      pl.puuid === p.puuid ? "text-riot-red font-bold" : "text-neutral-500"
                     }`}
                   >
                     {pl.riotIdGameName || pl.summonerName}
@@ -272,30 +265,30 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
           </div>
         )}
 
-        {/* Section 7: Breakdown Button & Expand/Collapse */}
-        <div className="flex items-center gap-3 shrink-0 ml-auto xl:ml-0 pr-1">
+        {/* Section 7: Action Controls */}
+        <div className="flex items-center gap-2 shrink-0 ml-auto xl:ml-0">
           {onOpenBreakdown && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenBreakdown(match);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-riot-accent/15 hover:bg-riot-accent/30 border border-riot-accent/40 text-riot-accent text-xs font-bold tracking-wide transition-all shadow-sm active:scale-95 shrink-0"
-              title="Open full match breakdown"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-800 hover:bg-riot-red hover:text-white border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-[11px] font-mono font-bold transition-all shrink-0"
+              title="Open match breakdown"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Full Breakdown</span>
+              <BarChart2 className="w-3 h-3" />
+              <span>Details</span>
             </button>
           )}
 
           <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center bg-riot-darkest/70 border border-riot-border/60 text-slate-400 hover:text-white hover:border-riot-accent hover:bg-riot-surface transition-all shrink-0"
-            title={isExpanded ? "Collapse scoreboard" : "Expand scoreboard"}
+            className="w-6 h-6 rounded-sm flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors shrink-0"
+            title={isExpanded ? "Collapse" : "Expand"}
           >
             {isExpanded ? (
-              <ChevronUp className="w-4 h-4 text-riot-accent" />
+              <ChevronUp className="w-3.5 h-3.5 text-riot-red" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-200" />
+              <ChevronDown className="w-3.5 h-3.5" />
             )}
           </div>
         </div>
@@ -303,8 +296,7 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
 
       {/* Expanded 10-Player Comprehensive Scoreboard */}
       {isExpanded && (
-        <div className="border-t border-riot-border/70 bg-riot-darkest/95 p-5 space-y-6 animate-in slide-in-from-top-2 duration-200">
-          {/* Blue Team Scoreboard */}
+        <div className="border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#0c0e14] p-3 space-y-4">
           <TeamScoreboard
             teamName="Blue Team"
             teamId={100}
@@ -315,7 +307,6 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
             teamStats={blueTeamStats}
           />
 
-          {/* Red Team Scoreboard */}
           <TeamScoreboard
             teamName="Red Team"
             teamId={200}
@@ -349,7 +340,7 @@ interface TeamScoreboardProps {
 
 const TeamScoreboard: React.FC<TeamScoreboardProps> = ({
   teamName,
-  teamId,
+  teamId: _teamId,
   isVictory,
   players,
   targetPuuid,
@@ -360,37 +351,27 @@ const TeamScoreboard: React.FC<TeamScoreboardProps> = ({
   const totalGold = teamStats?.totalGold ?? players.reduce((acc, x) => acc + x.goldEarned, 0);
 
   return (
-    <div className="space-y-2">
+    <div className="border border-neutral-200 dark:border-neutral-800 rounded-sm overflow-hidden bg-white dark:bg-[#11141c]">
       {/* Team Header */}
-      <div
-        className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-semibold ${
-          teamId === 100
-            ? "bg-sky-950/40 border-sky-500/30 text-sky-200"
-            : "bg-rose-950/40 border-rose-500/30 text-rose-200"
-        }`}
-      >
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100/70 dark:bg-[#151924] text-xs font-mono">
+        <div className="flex items-center gap-2">
           <span
-            className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+            className={`px-1.5 py-0.2 rounded-sm text-[9px] font-black uppercase ${
               isVictory
-                ? "bg-emerald-500/20 text-neon-win border border-emerald-500/40"
-                : "bg-rose-500/20 text-neon-loss border border-rose-500/40"
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                : "bg-riot-red/10 text-riot-red border border-riot-red/30"
             }`}
           >
             {isVictory ? "Victory" : "Defeat"}
           </span>
-          <span className="font-bold tracking-wide">{teamName}</span>
+          <span className="font-bold text-neutral-800 dark:text-neutral-200">{teamName}</span>
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-medium text-slate-300">
-          <span>
-            Kills: <strong className="text-white">{totalKills}</strong>
-          </span>
-          <span>
-            Gold: <strong className="text-riot-gold">{(totalGold / 1000).toFixed(1)}k</strong>
-          </span>
+        <div className="flex items-center gap-3 text-neutral-500 dark:text-neutral-400 tabular-nums text-[11px]">
+          <span>Kills: <strong className="text-neutral-800 dark:text-neutral-200">{totalKills}</strong></span>
+          <span>Gold: <strong className="text-neutral-800 dark:text-neutral-200">{(totalGold / 1000).toFixed(1)}k</strong></span>
           {teamStats && (
-            <div className="hidden sm:flex items-center gap-3 text-slate-400">
+            <div className="hidden sm:flex items-center gap-2 text-neutral-400">
               <span>Barons: {teamStats.baronKills}</span>
               <span>Dragons: {teamStats.dragonKills}</span>
               <span>Towers: {teamStats.towerKills}</span>
@@ -401,19 +382,19 @@ const TeamScoreboard: React.FC<TeamScoreboardProps> = ({
 
       {/* Players Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs text-slate-300 border-collapse">
+        <table className="w-full text-left text-xs text-neutral-700 dark:text-neutral-300 border-collapse font-mono">
           <thead>
-            <tr className="border-b border-riot-border/50 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              <th className="py-2 px-2.5">Player / Champion</th>
-              <th className="py-2 px-2">KDA</th>
-              <th className="py-2 px-2">Damage Dealt</th>
-              <th className="py-2 px-2">Damage Taken</th>
-              <th className="py-2 px-2">CS / Gold</th>
-              <th className="py-2 px-2">Wards</th>
-              <th className="py-2 px-2">Items</th>
+            <tr className="border-b border-neutral-200 dark:border-neutral-800 text-[9px] uppercase font-bold text-neutral-400 tracking-wider bg-neutral-50/50 dark:bg-[#131620]">
+              <th className="py-1.5 px-2">Player / Champion</th>
+              <th className="py-1.5 px-2">KDA</th>
+              <th className="py-1.5 px-2">Damage</th>
+              <th className="py-1.5 px-2">Taken</th>
+              <th className="py-1.5 px-2">CS / Gold</th>
+              <th className="py-1.5 px-2">Wards</th>
+              <th className="py-1.5 px-2">Items</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-riot-border/30">
+          <tbody className="divide-y divide-neutral-200 dark:divide-neutral-800/60 tabular-nums">
             {players.map((player) => {
               const isTarget = player.puuid === targetPuuid;
               const dmgPct = Math.round(
@@ -431,119 +412,110 @@ const TeamScoreboard: React.FC<TeamScoreboardProps> = ({
               return (
                 <tr
                   key={player.puuid}
-                  className={`hover:bg-slate-800/40 transition-colors ${
-                    isTarget ? "bg-riot-accent/10 font-medium" : ""
+                  className={`hover:bg-neutral-50 dark:hover:bg-[#161a26] transition-colors ${
+                    isTarget ? "bg-neutral-100/80 dark:bg-[#181d2c] font-semibold border-l-2 border-l-riot-red" : ""
                   }`}
                 >
                   {/* Player & Champ */}
-                  <td className="py-2.5 px-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-riot-border flex-shrink-0 bg-riot-darkest">
+                  <td className="py-1.5 px-2">
+                    <div className="flex items-center gap-2">
+                      <div className="relative w-6 h-6 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 shrink-0 bg-neutral-900">
                         <img
                           src={getChampionIconUrl(player.championName)}
                           alt={player.championName}
                           className="w-full h-full object-cover"
                         />
-                        <span className="absolute bottom-0 right-0 bg-black/80 text-[8px] font-bold px-1 rounded-tl">
+                        <span className="absolute bottom-0 right-0 bg-neutral-950 text-[7px] font-bold px-0.5 text-neutral-200">
                           {player.champLevel}
                         </span>
                       </div>
 
-                      {/* Summoner Spells */}
                       <div className="flex flex-col gap-0.5">
                         <img
                           src={getSummonerSpellIconUrl(player.summoner1Id)}
                           alt="Spell"
-                          className="w-3.5 h-3.5 rounded border border-riot-border"
+                          className="w-3 h-3 rounded-none"
                         />
                         <img
                           src={getSummonerSpellIconUrl(player.summoner2Id)}
                           alt="Spell"
-                          className="w-3.5 h-3.5 rounded border border-riot-border"
+                          className="w-3 h-3 rounded-none"
                         />
                       </div>
 
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           <span
-                            className={`truncate max-w-[120px] font-bold ${
-                              isTarget ? "text-riot-accent" : "text-slate-200"
+                            className={`truncate max-w-[100px] text-xs font-bold ${
+                              isTarget ? "text-riot-red" : "text-neutral-800 dark:text-neutral-200"
                             }`}
                           >
                             {player.riotIdGameName || player.summonerName}
                           </span>
                           {isTarget && (
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-riot-accent/20 text-riot-accent font-semibold">
+                            <span className="text-[8px] px-1 py-0.2 rounded-sm bg-riot-red text-white font-bold">
                               YOU
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-slate-500">{player.championName}</div>
                       </div>
                     </div>
                   </td>
 
                   {/* KDA */}
-                  <td className="py-2.5 px-2 whitespace-nowrap">
-                    <div className="font-bold text-slate-100">
-                      {player.kills} / <span className="text-neon-loss">{player.deaths}</span> /{" "}
+                  <td className="py-1.5 px-2 whitespace-nowrap">
+                    <div className="font-bold text-neutral-900 dark:text-neutral-100 text-xs">
+                      {player.kills} / <span className="text-riot-red">{player.deaths}</span> /{" "}
                       {player.assists}
                     </div>
-                    <div className="text-[10px] text-slate-400">{player.kda}:1 Ratio</div>
+                    <div className="text-[9px] text-neutral-500">{player.kda}:1</div>
                   </td>
 
-                  {/* Damage Dealt with visual bar */}
-                  <td className="py-2.5 px-2 min-w-[130px]">
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-200 mb-1">
+                  {/* Damage Dealt */}
+                  <td className="py-1.5 px-2 min-w-[100px]">
+                    <div className="flex items-center justify-between text-[10px] text-neutral-800 dark:text-neutral-200 mb-0.5">
                       <span>{(player.totalDamageDealtToChampions || 0).toLocaleString()}</span>
-                      <span className="text-[10px] text-slate-500">{dmgPct}%</span>
+                      <span className="text-[9px] text-neutral-400">{dmgPct}%</span>
                     </div>
-                    <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-neutral-200 dark:bg-neutral-800 rounded-none h-1 overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-rose-500 to-amber-500 h-1.5 rounded-full"
+                        className="bg-riot-red h-full"
                         style={{ width: `${dmgPct}%` }}
                       />
                     </div>
                   </td>
 
                   {/* Damage Taken */}
-                  <td className="py-2.5 px-2 whitespace-nowrap text-slate-400">
+                  <td className="py-1.5 px-2 whitespace-nowrap text-neutral-500 text-[10px]">
                     <div>{(player.totalDamageTaken || 0).toLocaleString()}</div>
-                    <div className="text-[10px] text-slate-500">
-                      Mitigated: {(player.damageSelfMitigated || 0).toLocaleString()}
-                    </div>
                   </td>
 
                   {/* CS & Gold */}
-                  <td className="py-2.5 px-2 whitespace-nowrap">
-                    <div className="font-semibold text-slate-200">
-                      {player.cs} CS <span className="text-[10px] text-slate-500">({player.csPerMin}/m)</span>
+                  <td className="py-1.5 px-2 whitespace-nowrap text-[10px]">
+                    <div className="text-neutral-800 dark:text-neutral-200 font-medium">
+                      {player.cs} CS
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-riot-gold font-semibold">
-                      <Coins className="w-3 h-3" />
-                      <span>{player.goldEarned.toLocaleString()}</span>
+                    <div className="text-neutral-500">
+                      {player.goldEarned.toLocaleString()}g
                     </div>
                   </td>
 
                   {/* Wards & Vision */}
-                  <td className="py-2.5 px-2 whitespace-nowrap">
-                    <div className="flex items-center gap-1 font-semibold text-slate-200">
-                      <Eye className="w-3.5 h-3.5 text-riot-accent" />
-                      <span>{player.visionScore}</span>
+                  <td className="py-1.5 px-2 whitespace-nowrap text-[10px] text-neutral-500">
+                    <div className="text-neutral-800 dark:text-neutral-200 font-medium">
+                      {player.visionScore} VS
                     </div>
-                    <div className="text-[10px] text-slate-500">
-                      Wards: {player.wardsPlaced} / {player.wardsKilled} ({player.controlWardsPlaced} CW)
-                    </div>
+                    <div>W: {player.wardsPlaced}</div>
                   </td>
 
                   {/* Items */}
-                  <td className="py-2.5 px-2 whitespace-nowrap">
-                    <div className="flex items-center gap-1">
+                  <td className="py-1.5 px-2 whitespace-nowrap">
+                    <div className="flex items-center gap-0.5">
                       {playerItems.map((itemId, i) => (
-                        <ItemTooltip key={i} itemId={itemId} size="sm" />
+                        <ItemTooltip key={i} itemId={itemId} size="xs" />
                       ))}
                       <div className="ml-0.5">
-                        <ItemTooltip itemId={player.item6} size="sm" isTrinket />
+                        <ItemTooltip itemId={player.item6} size="xs" isTrinket />
                       </div>
                     </div>
                   </td>

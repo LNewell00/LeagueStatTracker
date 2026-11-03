@@ -3,60 +3,72 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-main: #0a0c10;
+    --text-main: #f1f5f9;
+  }
+
+  :root:not(.dark) {
+    --bg-main: #f4f6f9;
+    --text-main: #0f172a;
+  }
+
   body {
-    @apply bg-riot-darkest text-slate-100 antialiased font-sans overflow-x-hidden min-h-screen;
-    background-image:
-      radial-gradient(circle at 15% 0%, rgba(236, 72, 153, 0.09) 0%, transparent 50%),
-      radial-gradient(circle at 85% 10%, rgba(129, 140, 248, 0.09) 0%, transparent 45%),
-      radial-gradient(circle at 50% 100%, rgba(251, 191, 36, 0.04) 0%, transparent 40%);
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    @apply antialiased font-sans overflow-x-hidden min-h-screen transition-colors duration-150;
   }
 }
 
-/* Custom Sleek Scrollbar */
+/* Sharp Analytics Scrollbars */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #433177 rgba(15, 11, 31, 0.7);
+  scrollbar-color: #2b3244 transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(15, 11, 31, 0.7);
-  border-radius: 8px;
+  background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #433177;
-  border-radius: 8px;
+  background: #2b3244;
+  border-radius: 2px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #ec4899;
+  background: #eb0029;
 }
 
-/* Global scrollbar fallback so Windows native white scrollbar never appears */
+/* Global scrollbar fallback */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #31235c rgba(15, 11, 31, 0.4);
+  scrollbar-color: #262c3b transparent;
 }
 
 *::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 *::-webkit-scrollbar-track {
-  background: rgba(15, 11, 31, 0.4);
+  background: transparent;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: #31235c;
-  border-radius: 4px;
+  background: #262c3b;
+  border-radius: 2px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: #ec4899;
+  background: #eb0029;
+}
+
+/* Tabular numbers for market analytics ticker alignment */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }

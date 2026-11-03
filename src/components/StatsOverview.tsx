@@ -12,109 +12,109 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ summary, summonerN
   const isPositiveWinRate = summary.winRate >= 50;
 
   return (
-    <div className="bg-gradient-to-r from-riot-card via-riot-surface to-riot-card border border-riot-border rounded-2xl p-5 shadow-lg relative overflow-hidden">
-      {/* Decorative Seraphine & Yuumi background glow */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-10 -left-10 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
-        {/* Left: Player ID & Win Rate Ring */}
-        <div className="flex items-center gap-5 w-full lg:w-auto">
-          {/* Win Rate Donut / Meter */}
-          <div className="relative w-20 h-20 flex-shrink-0 flex items-center justify-center">
+    <div className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0e14] rounded p-4 shadow-sm">
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+        {/* Left: Player ID & Win Rate Meter */}
+        <div className="flex items-center gap-4 w-full lg:w-auto">
+          {/* Win Rate Donut */}
+          <div className="relative w-16 h-16 shrink-0 flex items-center justify-center font-mono">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-              {/* Background Circle */}
               <path
-                className="text-riot-border stroke-current"
+                className="text-neutral-200 dark:text-neutral-800 stroke-current"
                 strokeWidth="3.5"
                 fill="none"
                 d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
               />
-              {/* Foreground Neon Progress */}
               <path
                 className={`${
-                  isPositiveWinRate ? "text-neon-win" : "text-neon-loss"
-                } stroke-current transition-all duration-1000 ease-out`}
+                  isPositiveWinRate ? "text-emerald-500" : "text-riot-red"
+                } stroke-current transition-all duration-700 ease-out`}
                 strokeDasharray={`${summary.winRate}, 100`}
                 strokeWidth="3.5"
-                strokeLinecap="round"
+                strokeLinecap="butt"
                 fill="none"
                 d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
               />
             </svg>
             <div className="absolute flex flex-col items-center">
-              <span className={`text-base font-extrabold ${isPositiveWinRate ? "text-neon-win" : "text-neon-loss"}`}>
+              <span className={`text-sm font-bold tabular-nums ${isPositiveWinRate ? "text-emerald-600 dark:text-emerald-400" : "text-riot-red"}`}>
                 {summary.winRate}%
               </span>
-              <span className="text-[10px] uppercase font-bold text-slate-400">WR</span>
+              <span className="text-[9px] uppercase font-bold text-neutral-400">WR</span>
             </div>
           </div>
 
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-100 tracking-tight">{summonerName}</h2>
-              <span className="text-xs px-2 py-0.5 rounded bg-riot-border text-slate-300 font-medium">
-                Last {summary.totalGames} Matches
+              <h2 className="text-base font-black text-neutral-900 dark:text-neutral-100 uppercase tracking-tight">
+                {summonerName}
+              </h2>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-sm bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700 font-bold">
+                {summary.totalGames} GAMES SAMPLE
               </span>
             </div>
-            <div className="flex items-center gap-3 mt-1 text-xs text-slate-400 font-medium">
-              <span className="text-neon-win font-semibold">{summary.wins}W</span>
-              <span>-</span>
-              <span className="text-neon-loss font-semibold">{summary.losses}L</span>
+            <div className="flex items-center gap-2 mt-1 text-xs font-mono text-neutral-500 dark:text-neutral-400">
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold">{summary.wins}W</span>
+              <span>/</span>
+              <span className="text-riot-red font-bold">{summary.losses}L</span>
               <span>•</span>
-              <span>CS/min: <strong className="text-slate-200">{summary.avgCsPerMin}</strong></span>
+              <span>CS/M: <strong className="text-neutral-800 dark:text-neutral-200">{summary.avgCsPerMin}</strong></span>
             </div>
           </div>
         </div>
 
-        {/* Center: Key Stats Cards */}
-        <div className="grid grid-cols-3 gap-3 w-full lg:w-auto flex-1 max-w-2xl xl:max-w-3xl">
-          {/* Card 1: Total Games */}
-          <div className="bg-riot-darkest/60 border border-riot-border/70 rounded-xl p-3 flex flex-col items-center justify-center">
-            <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-1">
-              <Trophy className="w-3.5 h-3.5 text-riot-gold" />
-              <span>Total Games</span>
+        {/* Center: Integrated Key Metrics Grid */}
+        <div className="grid grid-cols-3 gap-2.5 w-full lg:w-auto flex-1 max-w-2xl xl:max-w-3xl">
+          {/* Metric 1: Sample Size */}
+          <div className="bg-neutral-50 dark:bg-[#12151f] border border-neutral-200 dark:border-neutral-800 rounded p-2.5 flex flex-col items-center justify-center font-mono">
+            <div className="flex items-center gap-1 text-neutral-500 dark:text-neutral-400 text-[10px] uppercase font-bold tracking-wider mb-0.5">
+              <Trophy className="w-3 h-3 text-amber-500" />
+              <span>Total Tracked</span>
             </div>
-            <span className="text-lg font-bold text-slate-100">{summary.totalGames}</span>
+            <span className="text-base font-black text-neutral-900 dark:text-neutral-100 tabular-nums">
+              {summary.totalGames} Matches
+            </span>
           </div>
 
-          {/* Card 2: Average KDA */}
-          <div className="bg-riot-darkest/60 border border-riot-border/70 rounded-xl p-3 flex flex-col items-center justify-center">
-            <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-1">
-              <Crosshair className="w-3.5 h-3.5 text-riot-accent" />
-              <span>Avg KDA</span>
+          {/* Metric 2: Average KDA */}
+          <div className="bg-neutral-50 dark:bg-[#12151f] border border-neutral-200 dark:border-neutral-800 rounded p-2.5 flex flex-col items-center justify-center font-mono">
+            <div className="flex items-center gap-1 text-neutral-500 dark:text-neutral-400 text-[10px] uppercase font-bold tracking-wider mb-0.5">
+              <Crosshair className="w-3 h-3 text-riot-red" />
+              <span>Average KDA</span>
             </div>
             <div className="text-center">
-              <span className="text-lg font-bold text-slate-100">
-                {summary.avgKills} / <span className="text-neon-loss">{summary.avgDeaths}</span> / {summary.avgAssists}
+              <span className="text-sm font-black text-neutral-900 dark:text-neutral-100 tabular-nums">
+                {summary.avgKills} / <span className="text-riot-red">{summary.avgDeaths}</span> / {summary.avgAssists}
               </span>
-              <div className="text-[11px] font-semibold text-riot-accent">{summary.kdaRatio}:1 Ratio</div>
+              <div className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400 mt-0.5">
+                {summary.kdaRatio}:1 Ratio
+              </div>
             </div>
           </div>
 
-          {/* Card 3: Performance Rating */}
-          <div className="bg-riot-darkest/60 border border-riot-border/70 rounded-xl p-3 flex flex-col items-center justify-center">
-            <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-1">
-              <Swords className="w-3.5 h-3.5 text-emerald-400" />
+          {/* Metric 3: Win Ratio */}
+          <div className="bg-neutral-50 dark:bg-[#12151f] border border-neutral-200 dark:border-neutral-800 rounded p-2.5 flex flex-col items-center justify-center font-mono">
+            <div className="flex items-center gap-1 text-neutral-500 dark:text-neutral-400 text-[10px] uppercase font-bold tracking-wider mb-0.5">
+              <Swords className="w-3 h-3 text-emerald-500" />
               <span>Win Ratio</span>
             </div>
-            <span className={`text-lg font-bold ${isPositiveWinRate ? "text-neon-win" : "text-neon-loss"}`}>
+            <span className={`text-base font-black tabular-nums ${isPositiveWinRate ? "text-emerald-600 dark:text-emerald-400" : "text-riot-red"}`}>
               {summary.winRate}%
             </span>
           </div>
         </div>
 
-        {/* Right: Top Champions Mini Showcase */}
+        {/* Right: Top Champions Mini Matrix */}
         {summary.topChampions.length > 0 && (
-          <div className="hidden xl:flex flex-col gap-1.5 border-l border-riot-border/50 pl-5">
-            <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              <Award className="w-3.5 h-3.5 text-riot-gold" />
-              <span>Top Champions</span>
+          <div className="hidden xl:flex flex-col gap-1 border-l border-neutral-200 dark:border-neutral-800 pl-4">
+            <div className="flex items-center gap-1 text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider">
+              <Award className="w-3 h-3 text-amber-500" />
+              <span>Pool Leaders</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               {summary.topChampions.slice(0, 3).map((c) => (
-                <div key={c.championName} className="flex flex-col items-center group relative">
-                  <div className="w-9 h-9 rounded-lg overflow-hidden border border-riot-border group-hover:border-riot-accent transition-all">
+                <div key={c.championName} className="flex flex-col items-center">
+                  <div className="w-7 h-7 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 bg-neutral-900">
                     <img
                       src={getChampionIconUrl(c.championName)}
                       alt={c.championName}
@@ -122,7 +122,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ summary, summonerN
                       loading="lazy"
                     />
                   </div>
-                  <span className={`text-[10px] font-bold mt-0.5 ${c.winRate >= 50 ? "text-neon-win" : "text-neon-loss"}`}>
+                  <span className={`text-[9px] font-mono font-bold mt-0.5 tabular-nums ${c.winRate >= 50 ? "text-emerald-600 dark:text-emerald-400" : "text-riot-red"}`}>
                     {c.winRate}%
                   </span>
                 </div>
@@ -134,4 +134,3 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ summary, summonerN
     </div>
   );
 };
-

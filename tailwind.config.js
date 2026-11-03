@@ -9,35 +9,33 @@ export default {
     extend: {
       colors: {
         riot: {
-          darkest: "#090714", // Deep cosmic night
-          dark: "#0f0b1f",    // Twilight indigo
-          surface: "#16102e", // Astral velvet surface
-          card: "#1d153b",    // Radiant card
-          border: "#2e2159",  // Starlight border
-          accent: "#ec4899",  // Seraphine hot pink
-          seraphine: "#f43f85",
-          yuumi: "#818cf8",   // Yuumi celestial violet/indigo
-          crystal: "#c084fc", // Musical crystal purple
-          gold: "#fbbf24",    // Yuumi crown gold
-          goldLight: "#fef08a",
+          red: "#eb0029",       // Iconic Riot Games Red
+          redHover: "#c80023",  // Hover state
+          redDark: "#99001a",   // Deep crimson accent
+          redLight: "#ff3354",
+          black: "#0a0c10",     // Analytics carbon black
+          darkest: "#0e1117",   // Terminal background
+          dark: "#141822",      // Elevated panels
+          surface: "#1a1f2c",   // High-contrast surface
+          card: "#1e2433",      // Analytical data card
+          border: "#2b3244",    // Grid dividing rules
+          borderSubtle: "#1f2432",
+          blue: "#1e64b4",      // League Esports Blue (Order)
+          gold: "#c89b3c",      // Hextech Gold
+          win: "#10b981",       // Trading green
+          loss: "#ef4444",      // Trading red
         },
-        neon: {
-          win: "#10b981",    // emerald 500
-          winGlow: "#059669",
-          winBadge: "#064e3b",
-          loss: "#f43f5e",   // rose 500
-          lossGlow: "#e11d48",
-          lossBadge: "#4c0519",
-          active: "#ec4899", // seraphine pink active
-        }
+      },
+      borderRadius: {
+        none: "0px",
+        sm: "2px",
+        DEFAULT: "4px",
+        md: "6px",
+        lg: "8px",
       },
       boxShadow: {
-        "neon-win": "0 0 15px -3px rgba(16, 185, 129, 0.45)",
-        "neon-loss": "0 0 15px -3px rgba(244, 63, 94, 0.45)",
-        "neon-cyan": "0 0 20px -3px rgba(236, 72, 153, 0.45)",
-        "neon-pink": "0 0 20px -3px rgba(236, 72, 153, 0.5)",
-        "neon-yuumi": "0 0 20px -3px rgba(129, 140, 248, 0.5)",
-        "neon-gold": "0 0 15px -3px rgba(251, 191, 36, 0.45)",
+        subtle: "0 1px 2px 0 rgba(0, 0, 0, 0.08)",
+        panel: "0 1px 3px 0 rgba(0, 0, 0, 0.25), 0 1px 2px -1px rgba(0, 0, 0, 0.25)",
       },
       fontFamily: {
         sans: [
@@ -45,14 +43,18 @@ export default {
           "BlinkMacSystemFont",
           "'Segoe UI'",
           "Roboto",
-          "Oxygen",
-          "Ubuntu",
-          "Cantarell",
+          "Inter",
           "sans-serif",
+        ],
+        mono: [
+          "'JetBrains Mono'",
+          "'SF Mono'",
+          "Menlo",
+          "Consolas",
+          "monospace",
         ],
       },
     },
   },
   plugins: [],
 }
-

@@ -84,49 +84,51 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setTimeout(() => {
       setSavedSuccess(false);
       onClose();
-    }, 800);
+    }, 600);
   };
 
   const handleClear = async () => {
-    if (confirm("Are you sure you want to clear the local match cache?")) {
+    if (confirm("Are you sure you want to purge the local match cache?")) {
       await clearLocalCache();
       onCacheCleared();
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-riot-card border border-riot-border w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in font-mono text-xs">
+      <div className="bg-white dark:bg-[#0c0e14] border border-neutral-300 dark:border-neutral-700 w-full max-w-lg rounded shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-riot-border bg-riot-surface/50">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#11141c]">
           <div className="flex items-center gap-2">
-            <Key className="w-5 h-5 text-riot-accent" />
-            <h3 className="text-base font-bold text-slate-100">Application Settings</h3>
+            <Key className="w-4 h-4 text-riot-red" />
+            <h3 className="font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
+              Platform Configuration
+            </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-riot-surface"
+            className="p-1 rounded-sm text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSave} className="p-6 space-y-5">
+        <form onSubmit={handleSave} className="p-4 sm:p-5 space-y-4">
           {/* Riot API Key */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-                Riot API Key
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
+                Riot API Developer Key
               </label>
               <a
                 href="https://developer.riotgames.com/"
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-riot-accent hover:underline flex items-center gap-1"
+                className="text-[10px] text-riot-red hover:underline flex items-center gap-1"
               >
                 <span>Get Key</span>
-                <ExternalLink className="w-3 h-3" />
+                <ExternalLink className="w-2.5 h-2.5" />
               </a>
             </div>
             <input
@@ -134,50 +136,50 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              className="w-full px-3.5 py-2.5 text-sm bg-riot-darkest border border-riot-border rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-riot-accent"
+              className="w-full px-3 py-1.5 text-xs bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:border-riot-red"
             />
-            <p className="text-[11px] text-slate-400 mt-1">
-              Personal Riot Developer keys refresh every 24 hours. Stored locally on your machine.
+            <p className="text-[10px] text-neutral-400 mt-0.5">
+              Personal keys refresh every 24h. Persisted locally in encrypted storage.
             </p>
           </div>
 
           {/* Default Account & Region */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-                Default Game Name
+              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">
+                Default Summoner Name
               </label>
               <input
                 type="text"
                 value={gameName}
                 onChange={(e) => setGameName(e.target.value)}
                 placeholder="e.g. Faker"
-                className="w-full px-3 py-2 text-sm bg-riot-darkest border border-riot-border rounded-xl text-slate-100 focus:outline-none focus:border-riot-accent"
+                className="w-full px-2.5 py-1.5 text-xs bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-riot-red"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-                Default Tagline
+              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">
+                Tagline
               </label>
               <input
                 type="text"
                 value={tagLine}
                 onChange={(e) => setTagLine(e.target.value)}
                 placeholder="e.g. KR1"
-                className="w-full px-3 py-2 text-sm bg-riot-darkest border border-riot-border rounded-xl text-slate-100 focus:outline-none focus:border-riot-accent"
+                className="w-full px-2.5 py-1.5 text-xs bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-riot-red"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-                Default Region
+              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">
+                Default Server
               </label>
               <select
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-riot-darkest border border-riot-border rounded-xl text-slate-200 focus:outline-none focus:border-riot-accent cursor-pointer"
+                className="w-full px-2.5 py-1.5 text-xs bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-riot-red cursor-pointer"
               >
                 {SUPPORTED_REGIONS.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -187,13 +189,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </select>
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 block mb-1.5">
-                Default Game Count
+              <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">
+                Batch Sample Size
               </label>
               <select
                 value={matchCount}
                 onChange={(e) => setMatchCount(Number(e.target.value))}
-                className="w-full px-3 py-2 text-sm bg-riot-darkest border border-riot-border rounded-xl text-slate-200 focus:outline-none focus:border-riot-accent cursor-pointer"
+                className="w-full px-2.5 py-1.5 text-xs bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-riot-red cursor-pointer"
               >
                 <option value={10}>10 Games</option>
                 <option value={20}>20 Games (Recommended)</option>
@@ -205,66 +207,66 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           {/* Local Cache Management */}
-          <div className="pt-2 border-t border-riot-border/50 flex items-center justify-between">
+          <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
             <div>
-              <div className="text-xs font-semibold text-slate-200">Local Cache</div>
-              <div className="text-[11px] text-slate-500">Purge cached match histories to force re-fetch</div>
+              <div className="font-bold text-neutral-800 dark:text-neutral-200 text-xs">Cache Purge</div>
+              <div className="text-[10px] text-neutral-400">Flush locally saved match payloads</div>
             </div>
             <button
               type="button"
               onClick={handleClear}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold hover:bg-rose-500/20 transition-all"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs hover:border-riot-red transition-all"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Clear Cache</span>
+              <Trash2 className="w-3 h-3 text-riot-red" />
+              <span>Purge Cache</span>
             </button>
           </div>
 
           {/* Live App Updates via GitHub */}
-          <div className="pt-2 border-t border-riot-border/50 space-y-2">
+          <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800 space-y-2">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                  <ArrowUpCircle className="w-3.5 h-3.5 text-riot-accent" />
-                  <span>Application Updates</span>
+                <div className="font-bold text-neutral-800 dark:text-neutral-200 text-xs flex items-center gap-1.5">
+                  <ArrowUpCircle className="w-3.5 h-3.5 text-riot-red" />
+                  <span>Version Distribution</span>
                 </div>
-                <div className="text-[11px] text-slate-500">
-                  Version 0.1.0 • Connected to GitHub Releases
+                <div className="text-[10px] text-neutral-400">
+                  Build v0.1.0 • GitHub Releases Channel
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleCheckUpdate}
                 disabled={isCheckingUpdate || isDownloading}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-riot-surface border border-riot-border text-slate-200 text-xs font-medium hover:border-riot-accent transition-all disabled:opacity-50"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs hover:border-riot-red transition-all disabled:opacity-50"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isCheckingUpdate ? "animate-spin" : ""}`} />
-                <span>Check for Updates</span>
+                <RefreshCw className={`w-3 h-3 ${isCheckingUpdate ? "animate-spin" : ""}`} />
+                <span>Check Updates</span>
               </button>
             </div>
 
             {updateStatus && (
-              <div className="p-2.5 rounded-xl bg-riot-darkest border border-riot-border text-xs text-slate-300">
+              <div className="p-2 rounded-sm bg-neutral-100 dark:bg-[#141721] border border-neutral-200 dark:border-neutral-800 text-[11px] text-neutral-700 dark:text-neutral-300">
                 <p>{updateStatus}</p>
                 {availableUpdate && !isDownloading && (
                   <button
                     type="button"
                     onClick={handleInstallUpdate}
-                    className="mt-2 w-full py-1.5 px-3 rounded-lg bg-emerald-500 text-black font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-emerald-400 transition-all"
+                    className="mt-1.5 w-full py-1 px-2.5 rounded-sm bg-riot-red text-white font-bold text-xs flex items-center justify-center gap-1 hover:bg-riot-redHover transition-all"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Download & Relaunch</span>
+                    <Download className="w-3 h-3" />
+                    <span>Download & Apply</span>
                   </button>
                 )}
                 {isDownloading && (
-                  <div className="mt-2 space-y-1">
-                    <div className="flex justify-between text-[10px] text-slate-400">
-                      <span>Downloading update...</span>
-                      <span>{downloadProgress !== null ? `${downloadProgress}%` : "Please wait..."}</span>
+                  <div className="mt-1.5 space-y-1">
+                    <div className="flex justify-between text-[9px] text-neutral-400">
+                      <span>Downloading patch...</span>
+                      <span>{downloadProgress !== null ? `${downloadProgress}%` : "Wait..."}</span>
                     </div>
-                    <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-neutral-200 dark:bg-neutral-800 rounded-none h-1 overflow-hidden">
                       <div
-                        className="bg-riot-accent h-1.5 transition-all duration-300"
+                        className="bg-riot-red h-full transition-all duration-300"
                         style={{ width: `${downloadProgress || 50}%` }}
                       />
                     </div>
@@ -274,34 +276,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
-          {/* Legal Boilerplate Notice */}
-          <div className="p-3 rounded-xl bg-riot-darkest/60 border border-riot-border/50 text-[11px] text-slate-500 leading-relaxed">
-            <span className="font-semibold text-slate-400 block mb-0.5">Legal Disclaimer:</span>
-            League Stat Tracker is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
-          </div>
-
           {/* Action Buttons */}
-          <div className="pt-3 flex items-center justify-end gap-3">
+          <div className="pt-2 flex items-center justify-end gap-2 border-t border-neutral-200 dark:border-neutral-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-400 hover:text-slate-200 hover:bg-riot-surface transition-all"
+              className="px-3 py-1.5 rounded-sm text-xs font-semibold text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-riot-accent text-riot-darkest font-bold text-sm hover:brightness-110 active:scale-95 transition-all shadow-neon-cyan"
+              className="flex items-center gap-1 px-4 py-1.5 rounded bg-riot-red text-white font-bold text-xs hover:bg-riot-redHover active:scale-95 transition-all shadow-sm"
             >
               {savedSuccess ? (
                 <>
-                  <Check className="w-4 h-4" />
+                  <Check className="w-3.5 h-3.5" />
                   <span>Saved!</span>
                 </>
               ) : (
                 <>
-                  <RefreshCw className="w-4 h-4" />
-                  <span>Save Settings</span>
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Save Changes</span>
                 </>
               )}
             </button>
@@ -311,4 +307,3 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     </div>
   );
 };
-

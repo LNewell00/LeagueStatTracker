@@ -11,7 +11,8 @@ import {
   StopCircle,
   Footprints,
   Eye,
-  Crosshair,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import { getChampionIconUrl } from "../services/ddragon";
 import { ItemTooltip } from "./ItemTooltip";
@@ -33,22 +34,22 @@ const QUEST_ITEM_IDS = new Set([
 // Trinket Item IDs
 const TRINKET_ITEM_IDS = new Set([3340, 3364, 3363]);
 
-// Keystone Styling Map
-const KEYSTONE_STYLES: Record<string, { color: string; bg: string; icon: string }> = {
-  "Lethal Tempo": { color: "text-amber-300 border-amber-400/40", bg: "bg-amber-500/15", icon: "⚡" },
-  "First Strike": { color: "text-yellow-300 border-yellow-400/40", bg: "bg-yellow-500/15", icon: "💰" },
-  "Dark Harvest": { color: "text-purple-300 border-purple-400/40", bg: "bg-purple-500/15", icon: "💀" },
-  "Conqueror": { color: "text-orange-300 border-orange-400/40", bg: "bg-orange-500/15", icon: "⚔️" },
-  "Electrocute": { color: "text-rose-300 border-rose-400/40", bg: "bg-rose-500/15", icon: "⚡" },
-  "Hail of Blades": { color: "text-red-300 border-red-400/40", bg: "bg-red-500/15", icon: "🗡️" },
-  "Summon Aery": { color: "text-pink-300 border-pink-400/40", bg: "bg-pink-500/15", icon: "✨" },
-  "Arcane Comet": { color: "text-cyan-300 border-cyan-400/40", bg: "bg-cyan-500/15", icon: "☄️" },
-  "Phase Rush": { color: "text-sky-300 border-sky-400/40", bg: "bg-sky-500/15", icon: "💨" },
-  "Grasp of the Undying": { color: "text-emerald-300 border-emerald-400/40", bg: "bg-emerald-500/15", icon: "🛡️" },
-  "Aftershock": { color: "text-teal-300 border-teal-400/40", bg: "bg-teal-500/15", icon: "💥" },
-  "Fleet Footwork": { color: "text-amber-200 border-amber-300/40", bg: "bg-amber-500/15", icon: "👟" },
-  "Press the Attack": { color: "text-orange-300 border-orange-400/40", bg: "bg-orange-500/15", icon: "🎯" },
-  "Glacial Augment": { color: "text-cyan-200 border-cyan-300/40", bg: "bg-cyan-500/15", icon: "❄️" },
+// Keystone Acronyms for compact tabular display
+const KEYSTONE_ACRONYMS: Record<string, string> = {
+  "Lethal Tempo": "LT",
+  "First Strike": "FS",
+  "Dark Harvest": "DH",
+  "Conqueror": "CONQ",
+  "Electrocute": "ELEC",
+  "Hail of Blades": "HOB",
+  "Summon Aery": "AERY",
+  "Arcane Comet": "COMET",
+  "Phase Rush": "PR",
+  "Grasp of the Undying": "GRASP",
+  "Aftershock": "AFTER",
+  "Fleet Footwork": "FLEET",
+  "Press the Attack": "PTA",
+  "Glacial Augment": "GLACIAL",
 };
 
 const POSITION_ORDER = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"];
@@ -73,38 +74,37 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
 
   if (!liveState.isActive || !liveState.data) {
     return (
-      <div className="bg-riot-card/60 border border-riot-border/70 rounded-2xl p-5 relative overflow-hidden backdrop-blur-sm">
+      <div className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0e1117] rounded p-4 shadow-sm">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-riot-surface border border-riot-border">
-              <span className="absolute w-3 h-3 rounded-full bg-slate-500 animate-ping opacity-75" />
-              <Activity className="w-5 h-5 text-slate-400" />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 flex items-center justify-center text-neutral-600 dark:text-neutral-400">
+              <Activity className="w-4 h-4 animate-pulse text-riot-red" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-slate-200 text-sm tracking-wide">
-                  Live Client Radar
-                </h3>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                  127.0.0.1:2999
+                <span className="font-bold text-neutral-900 dark:text-neutral-100 text-xs font-mono uppercase tracking-wider">
+                  Live Match Telemetry
+                </span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-sm bg-neutral-100 dark:bg-neutral-800 text-neutral-500 border border-neutral-300 dark:border-neutral-700">
+                  PORT 2999
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Listening for active League match... (Practice Tool, AI Bots, ARAM, and Ranked supported)
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 font-mono">
+                Awaiting active match handshake... (Practice Tool, Bots, ARAM, Ranked)
               </p>
             </div>
           </div>
 
           <button
             onClick={onToggleMock}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase tracking-wider border transition-all ${
               isMockActive
-                ? "bg-riot-accent/20 border-riot-accent text-riot-accent shadow-neon-pink"
-                : "bg-riot-surface border-riot-border text-slate-300 hover:border-slate-500"
+                ? "bg-riot-red text-white border-riot-red shadow-sm"
+                : "bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400 dark:hover:border-neutral-600"
             }`}
           >
-            <PlayCircle className="w-4 h-4 text-riot-accent" />
-            <span>Simulate 10-Player Live Game</span>
+            <PlayCircle className="w-3.5 h-3.5 text-riot-red" />
+            <span>Simulate Match Stream</span>
           </button>
         </div>
       </div>
@@ -140,50 +140,41 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
   const redTotalGold = redTeam.reduce((acc, p) => acc + calculatePlayerGold(p), 0);
   const teamGoldDiff = blueTotalGold - redTotalGold;
 
+  // Team objective scores
   const blueKills = blueTeam.reduce((acc, p) => acc + (p.scores?.kills || 0), 0);
   const redKills = redTeam.reduce((acc, p) => acc + (p.scores?.kills || 0), 0);
 
-  // Objectives from events.Events
-  const allEvents = events?.Events || [];
-  const blueDragons = allEvents.filter(
-    (e) => e.EventName === "DragonKill" && blueTeam.some((p) => p.summonerName === (e as any).KillerName)
+  const blueDragons = (events?.Events || []).filter(
+    (e: any) => e.EventName === "DragonKill" && blueTeam.some((bp) => bp.summonerName === e.KillerName)
   ).length;
-  const redDragons = allEvents.filter(
-    (e) => e.EventName === "DragonKill" && redTeam.some((p) => p.summonerName === (e as any).KillerName)
+  const redDragons = (events?.Events || []).filter(
+    (e: any) => e.EventName === "DragonKill" && redTeam.some((rp) => rp.summonerName === e.KillerName)
   ).length;
 
-  const blueTowers = allEvents.filter(
-    (e) => e.EventName === "TurretKilled" && blueTeam.some((p) => p.summonerName === (e as any).KillerName)
+  const blueTowers = (events?.Events || []).filter(
+    (e: any) => e.EventName === "TurretKilled" && blueTeam.some((bp) => bp.summonerName === e.KillerName)
   ).length;
-  const redTowers = allEvents.filter(
-    (e) => e.EventName === "TurretKilled" && redTeam.some((p) => p.summonerName === (e as any).KillerName)
+  const redTowers = (events?.Events || []).filter(
+    (e: any) => e.EventName === "TurretKilled" && redTeam.some((rp) => rp.summonerName === e.KillerName)
   ).length;
 
-  interface SegregatedItems {
+  // Segregate Items: [Quest Item] | [6 Normal Items] | [Trinket]
+  const segregatePlayerItems = (items: LiveItem[]): {
     questItem: LiveItem | null;
     normalItems: LiveItem[];
     trinketItem: LiveItem | null;
-  }
-
-  const segregatePlayerItems = (rawItems: LiveItem[] = []): SegregatedItems => {
+  } => {
     let questItem: LiveItem | null = null;
     let trinketItem: LiveItem | null = null;
     const normalItems: LiveItem[] = [];
 
-    rawItems.forEach((it) => {
-      if (TRINKET_ITEM_IDS.has(it.itemID) || it.slot === 6) {
-        trinketItem = it;
-      } else if (
-        !questItem &&
-        (QUEST_ITEM_IDS.has(it.itemID) ||
-          it.displayName?.includes("Atlas") ||
-          it.displayName?.includes("Compass") ||
-          it.displayName?.includes("Bounty") ||
-          it.displayName?.includes("Hatchling") ||
-          it.displayName?.includes("Seedling") ||
-          it.displayName?.includes("Pup"))
-      ) {
-        questItem = it;
+    items.forEach((it) => {
+      if (TRINKET_ITEM_IDS.has(it.itemID) || it.displayName?.toLowerCase().includes("ward") || it.displayName?.toLowerCase().includes("lens")) {
+        if (!trinketItem) trinketItem = it;
+        else normalItems.push(it);
+      } else if (QUEST_ITEM_IDS.has(it.itemID) || it.displayName?.toLowerCase().includes("atlas") || it.displayName?.toLowerCase().includes("bounty") || it.displayName?.toLowerCase().includes("companion")) {
+        if (!questItem) questItem = it;
+        else normalItems.push(it);
       } else {
         normalItems.push(it);
       }
@@ -195,34 +186,28 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
   const renderRuneBadges = (p: LivePlayer) => {
     const rawRunes = (p.runes as any) || {};
     const keystoneName = rawRunes?.keystone?.displayName || "";
-    const style = KEYSTONE_STYLES[keystoneName] || {
-      color: "text-slate-300 border-slate-500/40",
-      bg: "bg-slate-500/10",
-      icon: "✨",
-    };
+    const acronym = KEYSTONE_ACRONYMS[keystoneName] || keystoneName.slice(0, 4).toUpperCase();
 
     const hasBootsRune =
       rawRunes?.hasMagicalFootwear ||
       (p.items || []).some((it) => it.itemID === 2422 || it.displayName?.includes("Footwear"));
 
     return (
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-1 shrink-0 font-mono">
         {keystoneName && (
           <span
-            className={`text-[9px] font-bold px-1 py-0.2 rounded border flex items-center gap-0.5 ${style.color} ${style.bg}`}
+            className="text-[9px] font-bold px-1 py-0.5 rounded-sm border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 select-none"
             title={`Keystone: ${keystoneName}`}
           >
-            <span>{style.icon}</span>
-            <span className="truncate max-w-[55px]">{keystoneName}</span>
+            {acronym}
           </span>
         )}
         {hasBootsRune && (
           <span
-            className="text-[9px] font-bold px-1 py-0.2 rounded border text-cyan-300 border-cyan-400/40 bg-cyan-500/15 flex items-center gap-0.5 shrink-0"
-            title="Magical Footwear Active"
+            className="text-[9px] font-bold px-1 py-0.5 rounded-sm border border-blue-400/40 bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center gap-0.5 select-none"
+            title="Magical Footwear"
           >
-            <Footprints className="w-2.5 h-2.5 text-cyan-300" />
-            <span>Boots</span>
+            <Footprints className="w-2.5 h-2.5" />
           </span>
         )}
       </div>
@@ -234,80 +219,83 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
 
     return (
       <div className="flex items-center gap-1 shrink-0">
-        {/* Quest Item Slot (Left) */}
+        {/* Quest Item Slot */}
         <div
-          className={`w-6 h-6 rounded-md overflow-hidden border flex items-center justify-center shrink-0 relative ${
+          className={`w-6 h-6 rounded-sm overflow-hidden border flex items-center justify-center shrink-0 relative ${
             questItem
-              ? "border-riot-gold bg-riot-darkest shadow-[0_0_6px_rgba(251,191,36,0.3)]"
-              : "border-dashed border-slate-700/60 bg-riot-darkest/40"
+              ? "border-amber-500/70 bg-amber-500/10"
+              : "border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-100/50 dark:bg-neutral-900/50"
           }`}
-          title={questItem ? `Quest Item: ${(questItem as LiveItem).displayName}` : "Quest Slot"}
+          title={questItem ? `Quest: ${(questItem as LiveItem).displayName}` : "Quest Slot"}
         >
           {questItem ? (
             <ItemTooltip itemId={(questItem as LiveItem).itemID} size="xs" />
           ) : (
-            <span className="text-[7px] font-mono text-slate-600 font-bold">Q</span>
+            <span className="text-[8px] font-mono text-neutral-400 font-bold">Q</span>
           )}
         </div>
 
-        <div className="h-4 w-[1px] bg-slate-700/50" />
-
-        {/* 6 Normal Slots */}
-        <div className="flex items-center gap-0.5">
+        {/* 6 Normal Inventory Slots */}
+        <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-900 p-0.5 rounded-sm border border-neutral-200 dark:border-neutral-800">
           {Array.from({ length: 6 }).map((_, idx) => {
-            const it = normalItems[idx];
+            const item = normalItems[idx];
             return (
               <div
                 key={idx}
-                className="w-6 h-6 rounded-md bg-riot-darkest border border-riot-border/70 overflow-hidden flex items-center justify-center shrink-0"
+                className="w-6 h-6 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700/70 bg-white dark:bg-[#141721] flex items-center justify-center shrink-0"
               >
-                {it && it.itemID > 0 ? (
-                  <ItemTooltip itemId={it.itemID} size="xs" />
+                {item ? (
+                  <ItemTooltip itemId={item.itemID} size="xs" />
                 ) : (
-                  <div className="w-1 h-1 rounded-full bg-slate-800" />
+                  <div className="w-full h-full bg-transparent" />
                 )}
               </div>
             );
           })}
         </div>
 
-        <div className="h-4 w-[1px] bg-slate-700/50" />
-
-        {/* Dedicated Trinket Slot (Right) */}
+        {/* Dedicated Trinket Slot */}
         <div
-          className="w-6 h-6 rounded-full bg-riot-darkest border border-riot-gold/50 overflow-hidden flex items-center justify-center shrink-0"
-          title={trinketItem ? `Trinket: ${(trinketItem as LiveItem).displayName}` : "No Trinket"}
+          className={`w-6 h-6 rounded-sm overflow-hidden border flex items-center justify-center shrink-0 relative ${
+            trinketItem
+              ? "border-neutral-400 dark:border-neutral-600 bg-neutral-100 dark:bg-neutral-800"
+              : "border-dashed border-neutral-300 dark:border-neutral-700 bg-neutral-100/50 dark:bg-neutral-900/50"
+          }`}
+          title={trinketItem ? `Trinket: ${(trinketItem as LiveItem).displayName}` : "Trinket Slot"}
         >
           {trinketItem ? (
-            <ItemTooltip itemId={(trinketItem as LiveItem).itemID} size="xs" isTrinket />
+            <ItemTooltip itemId={(trinketItem as LiveItem).itemID} size="xs" />
           ) : (
-            <Eye className="w-2.5 h-2.5 text-slate-600" />
+            <Eye className="w-2.5 h-2.5 text-neutral-400" />
           )}
         </div>
       </div>
     );
   };
 
+  const totalTeamGoldSum = Math.max(1, blueTotalGold + redTotalGold);
+  const blueGoldSharePercent = Math.round((blueTotalGold / totalTeamGoldSum) * 100);
+
   return (
-    <div className="space-y-2.5">
+    <div className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0e14] rounded shadow-sm overflow-hidden">
       {/* ========================================================= */}
-      {/* 1. TOP COMPACT BAR: BLUE TEAM vs RED TEAM + OBJECTIVES     */}
+      {/* 1. FINANCIAL ANALYTICS HEADER STRIP                       */}
       {/* ========================================================= */}
-      <div className="rounded-2xl border border-riot-border/80 bg-riot-darkest/95 p-3 flex flex-wrap items-center justify-between gap-3 shadow-xl">
-        {/* BLUE TEAM SCORE (LEFT) */}
-        <div className="flex items-center gap-3 bg-cyan-950/40 border border-cyan-500/40 px-3.5 py-1.5 rounded-xl shadow-[0_0_12px_rgba(34,211,238,0.15)]">
-          <span className="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] shrink-0" />
+      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#11141c] px-4 py-2.5 flex items-center justify-between gap-4">
+        {/* BLUE TEAM (ORDER) */}
+        <div className="flex items-center gap-3">
+          <div className="w-1.5 h-7 bg-blue-600 rounded-none shrink-0" />
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-wider text-cyan-300">
-                🔷 BLUE TEAM {isUserOrder && "(YOU)"}
+              <span className="text-xs font-mono font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                BLUE TEAM {isUserOrder && "(YOU)"}
               </span>
-              <span className="text-xs font-mono font-bold text-cyan-200">
+              <span className="text-xs font-mono font-bold text-neutral-900 dark:text-neutral-100 tabular-nums">
                 {blueTotalGold.toLocaleString()}g
               </span>
             </div>
-            <div className="text-[11px] font-mono text-cyan-200/80 flex items-center gap-2">
-              <span>Kills: <strong className="text-white">{blueKills}</strong></span>
+            <div className="text-[11px] font-mono text-neutral-500 dark:text-neutral-400 flex items-center gap-2 mt-0.5">
+              <span>K: <strong className="text-neutral-900 dark:text-neutral-200">{blueKills}</strong></span>
               <span>•</span>
               <span>🐉 {blueDragons}</span>
               <span>•</span>
@@ -316,66 +304,83 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
           </div>
         </div>
 
-        {/* CENTER: LIVE CLOCK & GOLD LEAD PILL */}
-        <div className="flex flex-col items-center shrink-0">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-riot-surface border border-riot-border text-xs text-slate-100 font-mono">
-            <span className="w-2 h-2 rounded-full bg-neon-win animate-ping shrink-0" />
-            <Clock className="w-3.5 h-3.5 text-riot-accent" />
-            <strong className="tracking-wider text-sm">{formatTime(gameData.gameTime || 0)}</strong>
+        {/* CENTER: MARKET CLOCK & GOLD DELTA TICKER */}
+        <div className="flex flex-col items-center shrink-0 min-w-[200px]">
+          <div className="flex items-center gap-2 text-xs font-mono text-neutral-900 dark:text-neutral-100 font-bold">
+            <Clock className="w-3.5 h-3.5 text-riot-red" />
+            <span className="tracking-wider text-sm">{formatTime(gameData.gameTime || 0)}</span>
           </div>
-          <div className="mt-1 text-[11px] font-mono font-bold">
+
+          <div className="mt-1 flex items-center gap-1.5 text-[11px] font-mono font-bold tabular-nums">
             {teamGoldDiff > 0 ? (
-              <span className="text-cyan-300 bg-cyan-500/15 px-2 py-0.5 rounded border border-cyan-500/30">
-                +{(teamGoldDiff).toLocaleString()}g Blue Lead
+              <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 bg-emerald-500/10 px-2 py-0.5 rounded-sm border border-emerald-500/30">
+                <TrendingUp className="w-3 h-3" />
+                +{(teamGoldDiff).toLocaleString()}g Blue Advantage
               </span>
             ) : teamGoldDiff < 0 ? (
-              <span className="text-rose-300 bg-rose-500/15 px-2 py-0.5 rounded border border-rose-500/30">
-                +{Math.abs(teamGoldDiff).toLocaleString()}g Red Lead
+              <span className="text-riot-red flex items-center gap-0.5 bg-riot-red/10 px-2 py-0.5 rounded-sm border border-riot-red/30">
+                <TrendingDown className="w-3 h-3" />
+                +{Math.abs(teamGoldDiff).toLocaleString()}g Red Advantage
               </span>
             ) : (
-              <span className="text-slate-400">Even Gold</span>
+              <span className="text-neutral-500 bg-neutral-200 dark:bg-neutral-800 px-2 py-0.5 rounded-sm">
+                PARITY (0g DIFF)
+              </span>
             )}
+          </div>
+
+          {/* Mini Gold Balance Bar */}
+          <div className="w-36 h-1 bg-neutral-200 dark:bg-neutral-800 rounded-none overflow-hidden mt-1.5 flex">
+            <div style={{ width: `${blueGoldSharePercent}%` }} className="bg-blue-600 h-full" />
+            <div style={{ width: `${100 - blueGoldSharePercent}%` }} className="bg-riot-red h-full" />
           </div>
         </div>
 
-        {/* RED TEAM SCORE (RIGHT) */}
-        <div className="flex items-center justify-end gap-3 bg-rose-950/40 border border-rose-500/40 px-3.5 py-1.5 rounded-xl text-right shadow-[0_0_12px_rgba(244,63,94,0.15)]">
+        {/* RED TEAM (CHAOS) */}
+        <div className="flex items-center justify-end gap-3 text-right">
           <div>
             <div className="flex items-center justify-end gap-2">
-              <span className="text-xs font-mono font-bold text-rose-200">
+              <span className="text-xs font-mono font-bold text-neutral-900 dark:text-neutral-100 tabular-nums">
                 {redTotalGold.toLocaleString()}g
               </span>
-              <span className="text-xs font-black uppercase tracking-wider text-rose-300">
-                🔴 RED TEAM {!isUserOrder && "(YOU)"}
+              <span className="text-xs font-mono font-black uppercase tracking-wider text-riot-red">
+                RED TEAM {!isUserOrder && "(YOU)"}
               </span>
             </div>
-            <div className="text-[11px] font-mono text-rose-200/80 flex items-center justify-end gap-2">
+            <div className="text-[11px] font-mono text-neutral-500 dark:text-neutral-400 flex items-center justify-end gap-2 mt-0.5">
               <span>🏰 {redTowers}</span>
               <span>•</span>
               <span>🐉 {redDragons}</span>
               <span>•</span>
-              <span>Kills: <strong className="text-white">{redKills}</strong></span>
+              <span>K: <strong className="text-neutral-900 dark:text-neutral-200">{redKills}</strong></span>
             </div>
           </div>
-          <span className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] shrink-0" />
-        </div>
+          <div className="w-1.5 h-7 bg-riot-red rounded-none shrink-0" />
 
-        {isMockActive && (
-          <button
-            onClick={onToggleMock}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[11px] font-bold hover:bg-rose-500/25 transition-all"
-            title="Stop Simulation"
-          >
-            <StopCircle className="w-3 h-3" />
-            <span>Stop Sim</span>
-          </button>
-        )}
+          {isMockActive && (
+            <button
+              onClick={onToggleMock}
+              className="ml-2 flex items-center gap-1 px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-[10px] font-mono font-bold hover:bg-riot-red hover:text-white transition-all"
+              title="Stop Simulation"
+            >
+              <StopCircle className="w-3 h-3" />
+              <span>STOP</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ========================================================= */}
-      {/* 2. 5-ROW COMPACT MATCHUP MATRIX (ZERO SCROLL FIT)         */}
+      {/* 2. MATCHUP MATRIX TABLE (INTEGRATED SINGLE-SCREEN)         */}
       {/* ========================================================= */}
-      <div className="space-y-1.5">
+      <div className="divide-y divide-neutral-200 dark:divide-neutral-800/80">
+        {/* Table Column Sub-header */}
+        <div className="bg-neutral-100/70 dark:bg-[#141722] px-3 py-1 flex items-center justify-between text-[10px] font-mono uppercase tracking-wider font-semibold text-neutral-500 dark:text-neutral-400 select-none">
+          <div className="flex-1">Order Roster & Equipment</div>
+          <div className="w-24 text-center">Lane Delta</div>
+          <div className="flex-1 text-right">Chaos Roster & Equipment</div>
+        </div>
+
         {POSITION_ORDER.map((pos) => {
           const bluePlayer = blueTeam.find((p) => p.position === pos) || blueTeam[0];
           const redPlayer = redTeam.find((p) => p.position === pos) || redTeam[0];
@@ -390,31 +395,32 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
           const rGold = calculatePlayerGold(redPlayer);
           const gDiff = bGold - rGold;
           const lDiff = bluePlayer.level - redPlayer.level;
+          const csDiff = (bluePlayer.scores?.creepScore || 0) - (redPlayer.scores?.creepScore || 0);
 
           return (
             <div
               key={pos}
-              className={`rounded-xl border transition-all p-2 flex items-center justify-between gap-2.5 ${
+              className={`px-3 py-2 flex items-center justify-between gap-3 transition-colors ${
                 isUserLane
-                  ? "bg-riot-card/95 border-riot-accent shadow-[0_0_15px_rgba(236,72,153,0.25)] ring-1 ring-riot-accent/40"
-                  : "bg-riot-darkest/80 border-riot-border/60 hover:border-slate-600"
+                  ? "bg-neutral-100/90 dark:bg-[#141824] border-l-2 border-l-riot-red"
+                  : "hover:bg-neutral-50 dark:hover:bg-[#11141d]"
               }`}
             >
               {/* ================= BLUE PLAYER (LEFT) ================= */}
-              <div className="flex items-center justify-between flex-1 gap-2 bg-gradient-to-r from-cyan-950/40 via-cyan-950/20 to-transparent p-1.5 rounded-lg border-l-2 border-l-cyan-400">
-                {/* Champion Avatar & Identity */}
-                <div className="flex items-center gap-2">
-                  <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-cyan-400/60 shrink-0">
+              <div className="flex items-center justify-between flex-1 gap-2">
+                {/* Avatar & Ident */}
+                <div className="flex items-center gap-2.5">
+                  <div className="relative w-8 h-8 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 shrink-0 bg-neutral-900">
                     <img
                       src={getChampionIconUrl(bluePlayer.championName)}
                       alt={bluePlayer.championName}
-                      className={`w-full h-full object-cover ${bluePlayer.isDead ? "grayscale" : ""}`}
+                      className={`w-full h-full object-cover ${bluePlayer.isDead ? "grayscale opacity-60" : ""}`}
                     />
-                    <span className="absolute bottom-0 right-0 bg-black/85 text-[8px] font-bold px-0.5 rounded-tl text-cyan-200">
+                    <span className="absolute bottom-0 right-0 bg-neutral-950 text-[8px] font-mono font-bold px-0.5 text-neutral-200">
                       {bluePlayer.level}
                     </span>
                     {bluePlayer.isDead && (
-                      <div className="absolute inset-0 bg-black/75 flex items-center justify-center text-[9px] font-mono font-black text-rose-400">
+                      <div className="absolute inset-0 bg-neutral-950/80 flex items-center justify-center text-[8px] font-mono font-black text-riot-red">
                         {bluePlayer.respawnTimer}s
                       </div>
                     )}
@@ -422,17 +428,17 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
 
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-slate-100">
+                      <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
                         {bluePlayer.championName}
                       </span>
                       {isUserBlue && (
-                        <span className="text-[8px] px-1 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40">
+                        <span className="text-[8px] px-1 py-0.2 rounded-sm bg-riot-red text-white font-mono font-bold">
                           YOU
                         </span>
                       )}
                     </div>
-                    <div className="text-[10px] font-mono text-slate-400">
-                      {bluePlayer.scores.kills}/{bluePlayer.scores.deaths}/{bluePlayer.scores.assists} • {bluePlayer.scores.creepScore}cs • <strong className="text-cyan-300">{bGold.toLocaleString()}g</strong>
+                    <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 tabular-nums">
+                      {bluePlayer.scores.kills}/{bluePlayer.scores.deaths}/{bluePlayer.scores.assists} • {bluePlayer.scores.creepScore}cs • <strong className="text-neutral-900 dark:text-neutral-200">{bGold.toLocaleString()}g</strong>
                     </div>
                   </div>
                 </div>
@@ -444,68 +450,80 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
                 </div>
               </div>
 
-              {/* ================= CENTER MATCHUP PILL ================= */}
-              <div className="flex flex-col items-center justify-center shrink-0 w-20 py-0.5">
-                <span className="text-[9px] uppercase font-black tracking-wider text-slate-300 bg-riot-surface border border-riot-border px-1.5 py-0.2 rounded">
+              {/* ================= CENTER DELTA TICKER ================= */}
+              <div className="flex flex-col items-center justify-center shrink-0 w-24 py-0.5 font-mono select-none">
+                <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded-sm bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
                   {POSITION_SHORT_LABELS[pos] || pos}
                 </span>
-                <div className="text-[10px] font-mono font-bold mt-0.5">
+
+                {/* Gold Delta Pill */}
+                <div className="text-[10px] font-bold mt-1 tabular-nums">
                   {gDiff > 0 ? (
-                    <span className="text-cyan-300">+{gDiff.toLocaleString()}g</span>
-                  ) : gDiff < 0 ? (
-                    <span className="text-rose-300">{gDiff.toLocaleString()}g</span>
-                  ) : (
-                    <span className="text-slate-500">Even</span>
-                  )}
-                  {lDiff !== 0 && (
-                    <span className={`ml-1 text-[9px] ${lDiff > 0 ? "text-cyan-300" : "text-rose-300"}`}>
-                      {lDiff > 0 ? `+${lDiff}L` : `${lDiff}L`}
+                    <span className="text-emerald-600 dark:text-emerald-400">
+                      ▲ +{gDiff.toLocaleString()}g
                     </span>
+                  ) : gDiff < 0 ? (
+                    <span className="text-riot-red">
+                      ▼ -{Math.abs(gDiff).toLocaleString()}g
+                    </span>
+                  ) : (
+                    <span className="text-neutral-400">0g</span>
                   )}
+                </div>
+
+                {/* Level & CS Delta */}
+                <div className="text-[9px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1 mt-0.5 tabular-nums">
+                  <span>
+                    {lDiff > 0 ? `+${lDiff}L` : lDiff < 0 ? `${lDiff}L` : "0L"}
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {csDiff > 0 ? `+${csDiff}cs` : csDiff < 0 ? `${csDiff}cs` : "0cs"}
+                  </span>
                 </div>
               </div>
 
               {/* ================= RED PLAYER (RIGHT) ================= */}
-              <div className="flex items-center justify-between flex-1 gap-2 bg-gradient-to-l from-rose-950/40 via-rose-950/20 to-transparent p-1.5 rounded-lg border-r-2 border-r-rose-500 text-right">
-                {/* Keystone & Items */}
-                <div className="flex items-center gap-1.5">
-                  {renderItemBar(redPlayer)}
-                  {renderRuneBadges(redPlayer)}
-                </div>
-
-                {/* Champion Avatar & Identity */}
-                <div className="flex items-center justify-end gap-2">
-                  <div>
-                    <div className="flex items-center justify-end gap-1.5">
-                      {isUserRed && (
-                        <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/40">
-                          YOU
-                        </span>
-                      )}
-                      <span className="text-xs font-bold text-slate-100">
-                        {redPlayer.championName}
-                      </span>
-                    </div>
-                    <div className="text-[10px] font-mono text-slate-400">
-                      <strong className="text-rose-300">{rGold.toLocaleString()}g</strong> • {redPlayer.scores.creepScore}cs • {redPlayer.scores.kills}/{redPlayer.scores.deaths}/{redPlayer.scores.assists}
-                    </div>
-                  </div>
-
-                  <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-rose-500/60 shrink-0">
+              <div className="flex items-center justify-between flex-1 gap-2 flex-row-reverse text-right">
+                {/* Avatar & Ident */}
+                <div className="flex items-center gap-2.5 flex-row-reverse text-right">
+                  <div className="relative w-8 h-8 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 shrink-0 bg-neutral-900">
                     <img
                       src={getChampionIconUrl(redPlayer.championName)}
                       alt={redPlayer.championName}
-                      className={`w-full h-full object-cover ${redPlayer.isDead ? "grayscale" : ""}`}
+                      className={`w-full h-full object-cover ${redPlayer.isDead ? "grayscale opacity-60" : ""}`}
                     />
-                    <span className="absolute bottom-0 right-0 bg-black/85 text-[8px] font-bold px-0.5 rounded-tl text-rose-200">
+                    <span className="absolute bottom-0 left-0 bg-neutral-950 text-[8px] font-mono font-bold px-0.5 text-neutral-200">
                       {redPlayer.level}
                     </span>
                     {redPlayer.isDead && (
-                      <div className="absolute inset-0 bg-black/75 flex items-center justify-center text-[9px] font-mono font-black text-rose-400">
+                      <div className="absolute inset-0 bg-neutral-950/80 flex items-center justify-center text-[8px] font-mono font-black text-riot-red">
                         {redPlayer.respawnTimer}s
                       </div>
                     )}
                   </div>
+
+                  <div>
+                    <div className="flex items-center justify-end gap-1.5">
+                      {isUserRed && (
+                        <span className="text-[8px] px-1 py-0.2 rounded-sm bg-riot-red text-white font-mono font-bold">
+                          YOU
+                        </span>
+                      )}
+                      <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                        {redPlayer.championName}
+                      </span>
+                    </div>
+                    <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 tabular-nums">
+                      <strong className="text-neutral-900 dark:text-neutral-200">{rGold.toLocaleString()}g</strong> • {redPlayer.scores.creepScore}cs • {redPlayer.scores.kills}/{redPlayer.scores.deaths}/{redPlayer.scores.assists}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Keystone & Items */}
+                <div className="flex items-center gap-1.5 flex-row-reverse">
+                  {renderRuneBadges(redPlayer)}
+                  {renderItemBar(redPlayer)}
                 </div>
               </div>
             </div>
@@ -514,47 +532,48 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
       </div>
 
       {/* ========================================================= */}
-      {/* 3. COMPACT FOOTER STRIP: YOUR LIVE COMBAT ATTRIBUTES       */}
+      {/* 3. DOCKED BOTTOM TELEMETRY BAR                            */}
       {/* ========================================================= */}
-      <div className="rounded-xl border border-riot-border/70 bg-riot-darkest/90 px-3.5 py-2 flex flex-wrap items-center justify-between gap-3 text-xs font-mono shadow-inner">
-        <div className="flex items-center gap-1.5 text-slate-300 font-sans font-bold text-[11px]">
-          <Crosshair className="w-3.5 h-3.5 text-riot-accent" />
-          <span>{activeUserInGame?.championName} Attributes:</span>
+      <div className="border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#11141c] px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+        <div className="flex items-center gap-2">
+          <Coins className="w-3.5 h-3.5 text-amber-500" />
+          <span className="text-neutral-500 dark:text-neutral-400">Current Wallet:</span>
+          <strong className="text-neutral-900 dark:text-neutral-100 tabular-nums">
+            {Math.round(activePlayer.currentGold || 0).toLocaleString()}g
+          </strong>
         </div>
 
-        <div className="flex items-center gap-4 text-[11px] flex-wrap">
-          <div className="flex items-center gap-1" title="Current Wallet Gold">
-            <Coins className="w-3 h-3 text-riot-gold" />
-            <span className="text-slate-400">Gold:</span>
-            <strong className="text-riot-gold">{Math.round(activePlayer.currentGold || 0)}g</strong>
-          </div>
-
+        <div className="flex items-center gap-4 text-[11px] tabular-nums">
           <div className="flex items-center gap-1" title="Attack Damage / Ability Power">
-            <Swords className="w-3 h-3 text-rose-400" />
-            <span className="text-slate-400">AD/AP:</span>
-            <strong className="text-slate-200">
+            <Swords className="w-3 h-3 text-riot-red" />
+            <span className="text-neutral-500 dark:text-neutral-400">AD/AP:</span>
+            <strong className="text-neutral-800 dark:text-neutral-200">
               {Math.round(activePlayer.championStats?.attackDamage || 0)} / {Math.round(activePlayer.championStats?.abilityPower || 0)}
             </strong>
           </div>
 
           <div className="flex items-center gap-1" title="Armor / Magic Resist">
-            <Shield className="w-3 h-3 text-sky-400" />
-            <span className="text-slate-400">Armor/MR:</span>
-            <strong className="text-slate-200">
+            <Shield className="w-3 h-3 text-blue-500" />
+            <span className="text-neutral-500 dark:text-neutral-400">Armor/MR:</span>
+            <strong className="text-neutral-800 dark:text-neutral-200">
               {Math.round(activePlayer.championStats?.armor || 0)} / {Math.round(activePlayer.championStats?.magicResist || 0)}
             </strong>
           </div>
 
           <div className="flex items-center gap-1" title="Ability Haste">
-            <Zap className="w-3 h-3 text-amber-400" />
-            <span className="text-slate-400">AH:</span>
-            <strong className="text-slate-200">{Math.round(activePlayer.championStats?.abilityHaste || 0)}</strong>
+            <Zap className="w-3 h-3 text-amber-500" />
+            <span className="text-neutral-500 dark:text-neutral-400">AH:</span>
+            <strong className="text-neutral-800 dark:text-neutral-200">
+              {Math.round(activePlayer.championStats?.abilityHaste || 0)}
+            </strong>
           </div>
 
           <div className="flex items-center gap-1" title="Movement Speed">
-            <Footprints className="w-3 h-3 text-cyan-400" />
-            <span className="text-slate-400">MS:</span>
-            <strong className="text-slate-200">{Math.round(activePlayer.championStats?.moveSpeed || 0)}</strong>
+            <Footprints className="w-3 h-3 text-neutral-400" />
+            <span className="text-neutral-500 dark:text-neutral-400">MS:</span>
+            <strong className="text-neutral-800 dark:text-neutral-200">
+              {Math.round(activePlayer.championStats?.moveSpeed || 0)}
+            </strong>
           </div>
         </div>
       </div>

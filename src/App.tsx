@@ -27,8 +27,11 @@ import {
 import { liveClientService } from "./services/liveClient";
 import {
   loadPreferences,
+  savePreferences,
   saveMatchesToCache,
   loadMatchesFromCache,
+  getInitialTheme,
+  applyTheme,
   AppPreferences,
 } from "./services/storage";
 import { loadChampionPool, loadCustomBuilds } from "./services/buildsStorage";
@@ -38,6 +41,7 @@ import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 
 export const App: React.FC = () => {
   const [preferences, setPreferences] = useState<AppPreferences>(loadPreferences);
+  const [theme, setTheme] = useState<"dark" | "light">(getInitialTheme);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("matches");
   const [selectedBreakdownMatch, setSelectedBreakdownMatch] = useState<ParsedMatch | null>(null);
@@ -81,6 +85,7 @@ export const App: React.FC = () => {
 
   // Initialize Data Dragon & Live Client Poller
   useEffect(() => {
+    applyTheme(theme);
     initDDragonVersion();
     liveClientService.start();
 
@@ -96,6 +101,17 @@ export const App: React.FC = () => {
       liveClientService.stop();
     };
   }, []);
+
+  const handleToggleTheme = () => {
+    const nextTheme: "dark" | "light" = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    applyTheme(nextTheme);
+    setPreferences((prev) => {
+      const updated: AppPreferences = { ...prev, theme: nextTheme };
+      savePreferences(updated);
+      return updated;
+    });
+  };
 
   const loadInitialData = async () => {
     const cached = await loadMatchesFromCache();
@@ -446,7 +462,7 @@ export const App: React.FC = () => {
   }, [matches]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-riot-darkest">
+    <div className="min-h-screen flex flex-col bg-neutral-100 dark:bg-[#0a0c10] text-neutral-900 dark:text-neutral-100 transition-colors">
       {/* Top Header */}
       <Header
         gameName={preferences.gameName}
@@ -458,41 +474,43 @@ export const App: React.FC = () => {
         onSearch={handleFetchMatches}
         onOpenSettings={() => setIsSettingsOpen(true)}
         hasApiKey={Boolean(preferences.apiKey)}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
+      />
+
+      {/* Integrated Navigation Workbench Strip */}
+      <NavigationTabs
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        matchesCount={matches.length}
+        isLiveActive={liveState.isActive}
+        duosCount={duosCount}
+        poolCount={loadChampionPool().length}
+        buildsCount={loadCustomBuilds().length}
       />
 
       {/* Main Body */}
-      <main className="flex-1 max-w-[1720px] w-full mx-auto p-4 sm:p-6 space-y-6">
-        {/* Navigation Tabs */}
-        <NavigationTabs
-          activeTab={activeTab}
-          onSelectTab={setActiveTab}
-          matchesCount={matches.length}
-          isLiveActive={liveState.isActive}
-          duosCount={duosCount}
-          poolCount={loadChampionPool().length}
-          buildsCount={loadCustomBuilds().length}
-        />
-
-        {/* Status notification toast/banner */}
+      <main className="flex-1 max-w-[1720px] w-full mx-auto px-4 sm:px-6 py-4 space-y-4">
+        {/* Status notification banner */}
         {statusMessage && (
           <div
-            className={`flex items-center justify-between p-3.5 rounded-xl border text-sm transition-all animate-in fade-in ${
+            className={`flex items-center justify-between p-3 rounded border text-xs font-mono transition-all animate-in fade-in ${
               statusMessage.type === "success"
-                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
+                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
                 : statusMessage.type === "error"
-                ? "bg-rose-500/10 border-rose-500/30 text-rose-300"
-                : "bg-riot-surface border-riot-border text-slate-300"
+                ? "bg-riot-red/10 border-riot-red/30 text-riot-red"
+                : "bg-white dark:bg-[#12151f] border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300"
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              {statusMessage.type === "success" && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
-              {statusMessage.type === "error" && <AlertCircle className="w-4 h-4 text-rose-400" />}
-              {statusMessage.type === "info" && <Info className="w-4 h-4 text-riot-accent" />}
+            <div className="flex items-center gap-2">
+              {statusMessage.type === "success" && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+              {statusMessage.type === "error" && <AlertCircle className="w-4 h-4 text-riot-red" />}
+              {statusMessage.type === "info" && <Info className="w-4 h-4 text-blue-500" />}
               <span>{statusMessage.text}</span>
             </div>
             <button
               onClick={() => setStatusMessage(null)}
-              className="text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded hover:bg-white/10"
+              className="text-[11px] text-neutral-400 hover:text-neutral-900 dark:hover:text-white px-2 py-0.5 rounded hover:bg-neutral-200 dark:hover:bg-neutral-800"
             >
               Dismiss
             </button>
@@ -501,7 +519,7 @@ export const App: React.FC = () => {
 
         {/* Tab 1: Matches & Overview */}
         {activeTab === "matches" && (
-          <div className="space-y-6 animate-in fade-in">
+          <div className="space-y-4 animate-in fade-in">
             <StatsOverview
               summary={summary}
               summonerName={`${preferences.gameName}#${preferences.tagLine}`}
@@ -600,14 +618,14 @@ export const App: React.FC = () => {
         onCacheCleared={handleCacheCleared}
       />
 
-      {/* App Footer & Legal Disclaimer (Visible to Players) */}
-      <footer className="border-t border-riot-border/50 py-6 px-4 text-center text-xs text-slate-500 mt-auto">
-        <div className="max-w-4xl mx-auto space-y-2">
-          <p className="font-semibold text-slate-400">
-            League Stat Tracker v0.1.0 • Seraphine & Yuumi Cosmic Edition
+      {/* App Footer & Legal Disclaimer */}
+      <footer className="border-t border-neutral-200 dark:border-neutral-800 py-4 px-4 text-center text-xs font-mono text-neutral-500 mt-auto bg-white/50 dark:bg-[#0c0e14]/50">
+        <div className="max-w-4xl mx-auto space-y-1">
+          <p className="font-bold text-neutral-700 dark:text-neutral-300">
+            League Stat Tracker • Esports & Analytics Platform
           </p>
-          <p className="text-[11px] leading-relaxed text-slate-500">
-            League Stat Tracker is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+          <p className="text-[10px] text-neutral-400">
+            League Stat Tracker isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc.
           </p>
         </div>
       </footer>

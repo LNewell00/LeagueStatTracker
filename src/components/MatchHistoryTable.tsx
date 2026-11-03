@@ -42,7 +42,6 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
     });
   }, [matches, filter]);
 
-  // Reset to page 1 if filter or matches change
   React.useEffect(() => {
     setCurrentPage(1);
   }, [filter, matches.length, pageSize]);
@@ -64,22 +63,22 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
       : Math.min(currentPage * pageSize, filteredMatches.length);
 
   return (
-    <div className="bg-riot-card/85 border border-riot-border rounded-2xl p-5 shadow-lg backdrop-blur-md space-y-4">
+    <div className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0e14] rounded p-4 shadow-sm space-y-3">
       {/* Table Header & Controls Bar */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-4 border-b border-riot-border/60">
-        <div className="flex items-center gap-2.5">
-          <History className="w-5 h-5 text-riot-accent" />
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 pb-3 border-b border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center gap-2">
+          <History className="w-4 h-4 text-riot-red" />
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-slate-100 tracking-wide">
-                Recent Matches
-              </h3>
-              <span className="text-xs text-slate-400 font-mono">
-                ({filteredMatches.length} of {matches.length} matches)
+            <div className="flex items-center gap-2 font-mono">
+              <span className="text-sm font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
+                Match History
+              </span>
+              <span className="text-xs text-neutral-500 tabular-nums">
+                ({filteredMatches.length} / {matches.length} Total)
               </span>
             </div>
             {filteredMatches.length > 0 && (
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[10px] font-mono text-neutral-400 mt-0.5 tabular-nums">
                 Showing {startIndex}–{endIndex} of {filteredMatches.length}
               </p>
             )}
@@ -87,25 +86,25 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
         </div>
 
         {/* Filter Controls & Page Size */}
-        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-between lg:justify-end">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-between lg:justify-end font-mono">
           {/* Win / Loss Filter */}
-          <div className="flex items-center gap-1 bg-riot-darkest p-1 rounded-xl border border-riot-border text-xs font-semibold">
+          <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-900 p-0.5 rounded-sm border border-neutral-200 dark:border-neutral-800 text-xs">
             <button
               onClick={() => setFilter("ALL")}
-              className={`px-3 py-1 rounded-lg transition-all ${
+              className={`px-2.5 py-1 rounded-sm text-xs font-bold transition-all ${
                 filter === "ALL"
-                  ? "bg-riot-surface text-slate-100 border border-riot-border shadow-sm font-bold"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-white dark:bg-[#1a1f2c] text-neutral-900 dark:text-neutral-100 shadow-sm border border-neutral-300 dark:border-neutral-700"
+                  : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
               }`}
             >
               All ({matches.length})
             </button>
             <button
               onClick={() => setFilter("WIN")}
-              className={`flex items-center gap-1 px-3 py-1 rounded-lg transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-sm text-xs font-bold transition-all ${
                 filter === "WIN"
-                  ? "bg-emerald-500/20 text-neon-win border border-emerald-500/40 shadow-neon-win font-bold"
-                  : "text-slate-400 hover:text-neon-win"
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                  : "text-neutral-500 hover:text-emerald-600"
               }`}
             >
               <CheckCircle2 className="w-3 h-3" />
@@ -113,10 +112,10 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
             </button>
             <button
               onClick={() => setFilter("LOSS")}
-              className={`flex items-center gap-1 px-3 py-1 rounded-lg transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-sm text-xs font-bold transition-all ${
                 filter === "LOSS"
-                  ? "bg-rose-500/20 text-neon-loss border border-rose-500/40 shadow-neon-loss font-bold"
-                  : "text-slate-400 hover:text-neon-loss"
+                  ? "bg-riot-red/15 text-riot-red border border-riot-red/30"
+                  : "text-neutral-500 hover:text-riot-red"
               }`}
             >
               <XCircle className="w-3 h-3" />
@@ -125,34 +124,34 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
           </div>
 
           {/* Page Size Toggle */}
-          <div className="flex items-center gap-1 bg-riot-darkest p-1 rounded-xl border border-riot-border text-xs font-semibold">
-            <ListFilter className="w-3.5 h-3.5 text-slate-500 ml-1.5" />
+          <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-900 p-0.5 rounded-sm border border-neutral-200 dark:border-neutral-800 text-xs font-mono">
+            <ListFilter className="w-3 h-3 text-neutral-400 ml-1" />
             <button
               onClick={() => setPageSize(10)}
-              className={`px-2 py-1 rounded-lg transition-all ${
+              className={`px-2 py-1 rounded-sm transition-all ${
                 pageSize === 10
-                  ? "bg-riot-accent text-white font-bold"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-riot-red text-white font-bold"
+                  : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
               }`}
             >
-              10/pg
+              10/p
             </button>
             <button
               onClick={() => setPageSize(20)}
-              className={`px-2 py-1 rounded-lg transition-all ${
+              className={`px-2 py-1 rounded-sm transition-all ${
                 pageSize === 20
-                  ? "bg-riot-accent text-white font-bold"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-riot-red text-white font-bold"
+                  : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
               }`}
             >
-              20/pg
+              20/p
             </button>
             <button
               onClick={() => setPageSize("ALL")}
-              className={`px-2 py-1 rounded-lg transition-all ${
+              className={`px-2 py-1 rounded-sm transition-all ${
                 pageSize === "ALL"
-                  ? "bg-riot-accent text-white font-bold"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-riot-red text-white font-bold"
+                  : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
               }`}
             >
               All
@@ -161,23 +160,23 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
         </div>
       </div>
 
-      {/* Content Area - Natural Page Flow (No inner nested scroll container!) */}
-      <div className="space-y-3 pt-1">
+      {/* Content Area */}
+      <div className="space-y-2 pt-0.5">
         {isLoading && matches.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="w-8 h-8 border-2 border-riot-accent border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-sm text-slate-400">
-              Fetching Match V5 history from Riot servers...
+          <div className="py-16 text-center font-mono">
+            <div className="w-6 h-6 border-2 border-riot-red border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-xs text-neutral-500">
+              Querying Match V5 records from Riot CDN...
             </p>
           </div>
         ) : filteredMatches.length === 0 ? (
-          <div className="py-16 text-center border border-dashed border-riot-border rounded-xl">
-            <Shield className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-            <p className="text-sm font-medium text-slate-300">
-              No matches found for this filter
+          <div className="py-12 text-center border border-dashed border-neutral-300 dark:border-neutral-700 rounded-sm">
+            <Shield className="w-6 h-6 text-neutral-400 mx-auto mb-2" />
+            <p className="text-xs font-mono font-bold text-neutral-700 dark:text-neutral-300">
+              No matching games found in current telemetry batch
             </p>
-            <p className="text-xs text-slate-500 mt-1">
-              Try selecting another filter or fetch fresh matches.
+            <p className="text-[11px] font-mono text-neutral-400 mt-1">
+              Select another filter or trigger an active sync.
             </p>
           </div>
         ) : (
@@ -193,30 +192,30 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
 
       {/* Pagination Footer Controls */}
       {filteredMatches.length > 0 && pageSize !== "ALL" && totalPages > 1 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-riot-border/50 text-xs">
-          <div className="text-slate-400 font-mono">
-            Page <strong className="text-slate-200">{currentPage}</strong> of{" "}
-            <strong className="text-slate-200">{totalPages}</strong>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-neutral-200 dark:border-neutral-800 text-xs font-mono">
+          <div className="text-neutral-500 tabular-nums">
+            Page <strong className="text-neutral-800 dark:text-neutral-200">{currentPage}</strong> /{" "}
+            <strong className="text-neutral-800 dark:text-neutral-200">{totalPages}</strong>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-riot-surface border border-riot-border text-slate-300 hover:text-white hover:border-riot-accent transition-all disabled:opacity-40 disabled:pointer-events-none"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-riot-red transition-all disabled:opacity-40 disabled:pointer-events-none"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              <span>Previous</span>
+              <ChevronLeft className="w-3 h-3" />
+              <span>Prev</span>
             </button>
 
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
               <button
                 key={pg}
                 onClick={() => setCurrentPage(pg)}
-                className={`w-7 h-7 rounded-xl font-bold font-mono transition-all ${
+                className={`w-6 h-6 rounded-sm font-bold font-mono transition-all text-xs ${
                   currentPage === pg
-                    ? "bg-riot-accent text-white shadow-neon-pink"
-                    : "bg-riot-surface border border-riot-border text-slate-400 hover:text-slate-200"
+                    ? "bg-riot-red text-white"
+                    : "bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200"
                 }`}
               >
                 {pg}
@@ -226,32 +225,32 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-riot-surface border border-riot-border text-slate-300 hover:text-white hover:border-riot-accent transition-all disabled:opacity-40 disabled:pointer-events-none"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-riot-red transition-all disabled:opacity-40 disabled:pointer-events-none"
             >
               <span>Next</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-3 h-3" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Load More Matches from Riot API */}
+      {/* Load More Matches */}
       {onLoadMore && hasApiKey && (
         <div className="pt-2 text-center">
           <button
             onClick={onLoadMore}
             disabled={isLoading || isLoadingMore}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-riot-surface border border-riot-accent/30 hover:border-riot-accent/70 hover:bg-riot-accent/15 text-riot-accent hover:text-pink-300 text-xs font-bold tracking-wide uppercase shadow-lg shadow-riot-accent/10 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 hover:border-riot-red text-neutral-800 dark:text-neutral-200 text-xs font-mono font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer"
           >
             {isLoadingMore ? (
               <>
-                <div className="w-3.5 h-3.5 border-2 border-riot-accent border-t-transparent rounded-full animate-spin" />
-                <span>Pulling More Matches from Riot...</span>
+                <div className="w-3 h-3 border-2 border-riot-red border-t-transparent rounded-full animate-spin" />
+                <span>Pulling Records...</span>
               </>
             ) : (
               <>
-                <PlusCircle className="w-4 h-4 text-riot-accent" />
-                <span>Load 10 Older Matches</span>
+                <PlusCircle className="w-3.5 h-3.5 text-riot-red" />
+                <span>Pull 10 Older Matches</span>
               </>
             )}
           </button>

@@ -27,71 +27,73 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
     label: string;
     icon: React.ReactNode;
     badge?: string | number;
-    livePulse?: boolean;
+    liveDot?: boolean;
   }[] = [
     {
       id: "matches",
-      label: "Matches & Overview",
-      icon: <History className="w-4 h-4" />,
+      label: "Overview & Matches",
+      icon: <History className="w-3.5 h-3.5" />,
       badge: matchesCount > 0 ? matchesCount : undefined,
     },
     {
       id: "mmr",
-      label: "Ranked MMR Trend",
-      icon: <TrendingUp className="w-4 h-4" />,
+      label: "MMR Analytics",
+      icon: <TrendingUp className="w-3.5 h-3.5" />,
     },
     {
       id: "synergy",
-      label: "Duo & Synergy",
-      icon: <Users className="w-4 h-4" />,
-      badge: duosCount > 0 ? `${duosCount} duos` : undefined,
+      label: "Duo Synergies",
+      icon: <Users className="w-3.5 h-3.5" />,
+      badge: duosCount > 0 ? duosCount : undefined,
     },
     {
       id: "champions",
       label: "Champion Pool",
-      icon: <Shield className="w-4 h-4" />,
+      icon: <Shield className="w-3.5 h-3.5" />,
       badge: poolCount > 0 ? poolCount : undefined,
     },
     {
       id: "builds",
-      label: "Build & Item Planner",
-      icon: <Package className="w-4 h-4" />,
-      badge: buildsCount > 0 ? `${buildsCount} builds` : undefined,
+      label: "Build Matrix",
+      icon: <Package className="w-3.5 h-3.5" />,
+      badge: buildsCount > 0 ? buildsCount : undefined,
     },
     {
       id: "live",
-      label: "Live Client",
-      icon: <Radio className="w-4 h-4" />,
-      badge: isLiveActive ? "IN GAME" : undefined,
-      livePulse: isLiveActive,
+      label: "Live Match Feed",
+      icon: <Radio className="w-3.5 h-3.5" />,
+      badge: isLiveActive ? "LIVE" : undefined,
+      liveDot: isLiveActive,
     },
   ];
 
   return (
-    <div className="flex items-center gap-1.5 p-1.5 bg-riot-card/90 border border-riot-border/80 rounded-2xl shadow-lg backdrop-blur-md overflow-x-auto custom-scrollbar select-none">
+    <div className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100/60 dark:bg-[#0e1117] px-2 sm:px-4 flex items-center gap-1 overflow-x-auto custom-scrollbar select-none">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
           <button
             key={tab.id}
             onClick={() => onSelectTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+            className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-mono uppercase tracking-wider font-bold transition-all border-b-2 cursor-pointer whitespace-nowrap ${
               isActive
-                ? "bg-gradient-to-r from-pink-500/25 to-indigo-500/25 text-slate-100 border border-pink-500/40 shadow-neon-pink"
-                : "text-slate-400 hover:text-slate-200 hover:bg-riot-surface/50"
+                ? "border-riot-red text-neutral-900 dark:text-white bg-white dark:bg-[#151923]"
+                : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/40"
             }`}
           >
-            <span className={isActive ? "text-pink-400" : "text-slate-400"}>{tab.icon}</span>
+            <span className={isActive ? "text-riot-red" : "text-neutral-400"}>
+              {tab.icon}
+            </span>
             <span>{tab.label}</span>
 
             {tab.badge !== undefined && (
               <span
-                className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
-                  tab.livePulse
-                    ? "bg-emerald-500/20 text-neon-win border border-emerald-500/40 animate-pulse"
+                className={`text-[10px] font-mono px-1.5 py-0.2 rounded-sm font-bold ${
+                  tab.liveDot
+                    ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40"
                     : isActive
-                    ? "bg-pink-500/30 text-pink-200 border border-pink-500/50"
-                    : "bg-riot-darkest text-slate-400 border border-riot-border"
+                    ? "bg-riot-red/10 text-riot-red border border-riot-red/30"
+                    : "bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400"
                 }`}
               >
                 {tab.badge}
