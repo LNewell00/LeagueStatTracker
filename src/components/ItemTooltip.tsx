@@ -81,8 +81,8 @@ export const ItemTooltip: React.FC<ItemTooltipProps> = ({
   // Size styling
   const sizeClasses = {
     xs: "w-5 h-5 rounded",
-    sm: "w-6 h-6 rounded-md",
-    md: "w-8 h-8 rounded-lg",
+    sm: "w-6 h-6 rounded-sm",
+    md: "w-8 h-8 rounded-sm",
   }[size];
 
   if (!itemId || itemId === 0) {

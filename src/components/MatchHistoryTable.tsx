@@ -103,27 +103,27 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
   const winRate = filteredMatches.length > 0 ? Math.round((winsCount / filteredMatches.length) * 100) : 0;
 
   return (
-    <div className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0e14] rounded p-4 shadow-sm space-y-3">
+    <div className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0e14] rounded p-4 sm:p-5 shadow-sm space-y-3.5">
       {/* Table Header & Controls Bar */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 pb-3 border-b border-neutral-200 dark:border-neutral-800">
-        <div className="flex items-center gap-2">
-          <History className="w-4 h-4 text-riot-red" />
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3.5 pb-3.5 border-b border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center gap-2.5">
+          <History className="w-5 h-5 text-riot-red" />
           <div>
-            <div className="flex items-center gap-2 font-mono">
-              <span className="text-sm font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
+            <div className="flex items-center gap-2.5 font-mono">
+              <span className="text-base font-black uppercase tracking-wider text-neutral-900 dark:text-neutral-100">
                 Match History
               </span>
-              <span className="text-xs text-neutral-500 tabular-nums">
+              <span className="text-xs sm:text-sm text-neutral-500 tabular-nums">
                 ({filteredMatches.length} / {matches.length} Total)
               </span>
               {filteredMatches.length > 0 && (
-                <span className="text-[11px] px-1.5 py-0.5 rounded-sm font-bold bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300">
+                <span className="text-xs px-2 py-0.5 rounded-sm font-bold bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300">
                   {winsCount}W - {lossesCount}L ({winRate}%)
                 </span>
               )}
             </div>
             {filteredMatches.length > 0 && (
-              <p className="text-[10px] font-mono text-neutral-400 mt-0.5 tabular-nums">
+              <p className="text-xs font-mono text-neutral-400 mt-0.5 tabular-nums">
                 Showing {startIndex}–{endIndex} of {filteredMatches.length}
               </p>
             )}
@@ -131,12 +131,12 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
         </div>
 
         {/* Filter Controls & Page Size */}
-        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-between lg:justify-end font-mono">
+        <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-between lg:justify-end font-mono">
           {/* Win / Loss Filter */}
-          <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-900 p-0.5 rounded-sm border border-neutral-200 dark:border-neutral-800 text-xs">
+          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-900 p-1 rounded-sm border border-neutral-200 dark:border-neutral-800 text-xs">
             <button
               onClick={() => setFilter("ALL")}
-              className={`px-2.5 py-1 rounded-sm text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-sm text-xs font-bold transition-all cursor-pointer ${
                 filter === "ALL"
                   ? "bg-white dark:bg-[#1a1f2c] text-neutral-900 dark:text-neutral-100 shadow-sm border border-neutral-300 dark:border-neutral-700"
                   : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
@@ -146,34 +146,34 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
             </button>
             <button
               onClick={() => setFilter("WIN")}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-sm text-xs font-bold transition-all ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-sm text-xs font-bold transition-all cursor-pointer ${
                 filter === "WIN"
                   ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
                   : "text-neutral-500 hover:text-emerald-600"
               }`}
             >
-              <CheckCircle2 className="w-3 h-3" />
+              <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Victories</span>
             </button>
             <button
               onClick={() => setFilter("LOSS")}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-sm text-xs font-bold transition-all ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-sm text-xs font-bold transition-all cursor-pointer ${
                 filter === "LOSS"
                   ? "bg-riot-red/15 text-riot-red border border-riot-red/30"
                   : "text-neutral-500 hover:text-riot-red"
               }`}
             >
-              <XCircle className="w-3 h-3" />
+              <XCircle className="w-3.5 h-3.5" />
               <span>Defeats</span>
             </button>
           </div>
 
           {/* Page Size Toggle */}
-          <div className="flex items-center gap-0.5 bg-neutral-100 dark:bg-neutral-900 p-0.5 rounded-sm border border-neutral-200 dark:border-neutral-800 text-xs font-mono">
-            <ListFilter className="w-3 h-3 text-neutral-400 ml-1" />
+          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-900 p-1 rounded-sm border border-neutral-200 dark:border-neutral-800 text-xs font-mono">
+            <ListFilter className="w-3.5 h-3.5 text-neutral-400 ml-1" />
             <button
               onClick={() => setPageSize(10)}
-              className={`px-2 py-1 rounded-sm transition-all ${
+              className={`px-2.5 py-1.5 rounded-sm transition-all cursor-pointer ${
                 pageSize === 10
                   ? "bg-riot-red text-white font-bold"
                   : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
@@ -183,7 +183,7 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
             </button>
             <button
               onClick={() => setPageSize(20)}
-              className={`px-2 py-1 rounded-sm transition-all ${
+              className={`px-2.5 py-1.5 rounded-sm transition-all cursor-pointer ${
                 pageSize === 20
                   ? "bg-riot-red text-white font-bold"
                   : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
@@ -193,7 +193,7 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
             </button>
             <button
               onClick={() => setPageSize("ALL")}
-              className={`px-2 py-1 rounded-sm transition-all ${
+              className={`px-2.5 py-1.5 rounded-sm transition-all cursor-pointer ${
                 pageSize === "ALL"
                   ? "bg-riot-red text-white font-bold"
                   : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
@@ -206,13 +206,13 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
       </div>
 
       {/* Queue Mode Filter Subbar */}
-      <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-neutral-200 dark:border-neutral-800 text-xs font-mono">
-        <span className="text-[10px] uppercase font-bold text-neutral-400 mr-1 flex items-center gap-1">
-          <Layers className="w-3 h-3" /> Queue:
+      <div className="flex flex-wrap items-center gap-2 pb-2.5 border-b border-neutral-200 dark:border-neutral-800 text-xs font-mono">
+        <span className="text-xs uppercase font-bold text-neutral-400 mr-1 flex items-center gap-1">
+          <Layers className="w-3.5 h-3.5" /> Queue:
         </span>
         <button
           onClick={() => setQueueFilter("ALL")}
-          className={`px-2 py-0.5 rounded-sm transition-all ${
+          className={`px-2.5 py-1 rounded-sm transition-all cursor-pointer ${
             queueFilter === "ALL"
               ? "bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 font-bold"
               : "bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 border border-neutral-200 dark:border-neutral-800"
@@ -222,18 +222,18 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
         </button>
         <button
           onClick={() => setQueueFilter("420")}
-          className={`px-2 py-0.5 rounded-sm transition-all flex items-center gap-1 ${
+          className={`px-2.5 py-1 rounded-sm transition-all flex items-center gap-1 cursor-pointer ${
             queueFilter === "420"
               ? "bg-riot-red text-white font-bold"
               : "bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:border-riot-red border border-neutral-200 dark:border-neutral-800"
           }`}
         >
-          <TrendingUp className="w-2.5 h-2.5" />
+          <TrendingUp className="w-3 h-3" />
           Ranked Solo ({queueCounts["420"] || 0})
         </button>
         <button
           onClick={() => setQueueFilter("440")}
-          className={`px-2 py-0.5 rounded-sm transition-all ${
+          className={`px-2.5 py-1 rounded-sm transition-all cursor-pointer ${
             queueFilter === "440"
               ? "bg-purple-600 text-white font-bold"
               : "bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-purple-400 border border-neutral-200 dark:border-neutral-800"
@@ -243,7 +243,7 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
         </button>
         <button
           onClick={() => setQueueFilter("400")}
-          className={`px-2 py-0.5 rounded-sm transition-all ${
+          className={`px-2.5 py-1 rounded-sm transition-all cursor-pointer ${
             queueFilter === "400"
               ? "bg-sky-600 text-white font-bold"
               : "bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-sky-400 border border-neutral-200 dark:border-neutral-800"
@@ -253,7 +253,7 @@ export const MatchHistoryTable: React.FC<MatchHistoryTableProps> = ({
         </button>
         <button
           onClick={() => setQueueFilter("450")}
-          className={`px-2 py-0.5 rounded-sm transition-all ${
+          className={`px-2.5 py-1 rounded-sm transition-all cursor-pointer ${
             queueFilter === "450"
               ? "bg-amber-600 text-white font-bold"
               : "bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-amber-400 border border-neutral-200 dark:border-neutral-800"
