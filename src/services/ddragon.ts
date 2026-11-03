@@ -22,12 +22,39 @@ export function getDDragonVersion(): string {
   return currentPatchVersion;
 }
 
+const CHAMPION_NAME_MAP: Record<string, string> = {
+  kaisa: "Kaisa",
+  chogath: "Chogath",
+  khazix: "Khazix",
+  velkoz: "Velkoz",
+  belveth: "Belveth",
+  leblanc: "Leblanc",
+  monkeyking: "MonkeyKing",
+  wukong: "MonkeyKing",
+  fiddlesticks: "Fiddlesticks",
+  renataglasc: "Renata",
+  renata: "Renata",
+  nunuwillump: "Nunu",
+  nunu: "Nunu",
+  drmundo: "DrMundo",
+  jarvaniv: "JarvanIV",
+  masteryi: "MasterYi",
+  missfortune: "MissFortune",
+  tahmkench: "TahmKench",
+  twistedfate: "TwistedFate",
+  xinzhao: "XinZhao",
+  aurelionsol: "AurelionSol",
+  ksante: "KSante",
+};
+
 export function getChampionIconUrl(championName: string): string {
   if (!championName) return "";
-  // Fix minor naming anomalies (FiddleSticks -> Fiddlesticks, etc.)
+  const cleaned = championName.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+  const mapped = CHAMPION_NAME_MAP[cleaned];
+  if (mapped) {
+    return `https://ddragon.leagueoflegends.com/cdn/${currentPatchVersion}/img/champion/${mapped}.png`;
+  }
   let formatted = championName.replace(/[^a-zA-Z0-9]/g, "");
-  if (formatted.toLowerCase() === "fiddlesticks") formatted = "Fiddlesticks";
-  if (formatted.toLowerCase() === "wukong") formatted = "MonkeyKing";
   return `https://ddragon.leagueoflegends.com/cdn/${currentPatchVersion}/img/champion/${formatted}.png`;
 }
 

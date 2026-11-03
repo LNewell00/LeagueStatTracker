@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { LivePollerState, LivePlayer, LiveItem } from "../types/live";
 import {
   Activity,
@@ -9,10 +9,9 @@ import {
   Coins,
   PlayCircle,
   StopCircle,
-  Sparkles,
   Footprints,
   Eye,
-  Layers,
+  Crosshair,
 } from "lucide-react";
 import { getChampionIconUrl } from "../services/ddragon";
 import { ItemTooltip } from "./ItemTooltip";
@@ -25,22 +24,14 @@ interface LiveGameCardProps {
 
 // Support & Jungle Quest Item IDs
 const QUEST_ITEM_IDS = new Set([
-  // 2024 Support quest items & upgrades
   3865, 3866, 3867, 3869, 3870, 3871, 3876, 3877,
-  // Older support starters
   3850, 3851, 3853, 3854, 3855, 3857, 3858, 3859, 3860, 3862, 3863, 3864,
-  // Jungle Pet companions
   1101, 1102, 1103,
-  // Tear stacking quest items
   3070, 3004, 3003, 3119,
 ]);
 
 // Trinket Item IDs
-const TRINKET_ITEM_IDS = new Set([
-  3340, // Stealth Ward (Yellow)
-  3364, // Oracle Lens (Red)
-  3363, // Farsight Alteration (Blue)
-]);
+const TRINKET_ITEM_IDS = new Set([3340, 3364, 3363]);
 
 // Keystone Styling Map
 const KEYSTONE_STYLES: Record<string, { color: string; bg: string; icon: string }> = {
@@ -61,12 +52,12 @@ const KEYSTONE_STYLES: Record<string, { color: string; bg: string; icon: string 
 };
 
 const POSITION_ORDER = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"];
-const POSITION_LABELS: Record<string, string> = {
-  TOP: "Top Lane",
-  JUNGLE: "Jungle",
-  MIDDLE: "Mid Lane",
-  BOTTOM: "Bot Carry",
-  UTILITY: "Support",
+const POSITION_SHORT_LABELS: Record<string, string> = {
+  TOP: "TOP",
+  JUNGLE: "JGL",
+  MIDDLE: "MID",
+  BOTTOM: "BOT",
+  UTILITY: "SUP",
 };
 
 export const LiveGameCard: React.FC<LiveGameCardProps> = ({
@@ -74,8 +65,6 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
   isMockActive,
   onToggleMock,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<"faceoff" | "personal">("faceoff");
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -101,24 +90,22 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Listening for active League match... (Works with Practice Tool, Bots, ARAM, and Ranked)
+                Listening for active League match... (Practice Tool, AI Bots, ARAM, and Ranked supported)
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onToggleMock}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                isMockActive
-                  ? "bg-riot-accent/20 border-riot-accent text-riot-accent shadow-neon-pink"
-                  : "bg-riot-surface border-riot-border text-slate-300 hover:border-slate-500"
-              }`}
-            >
-              <PlayCircle className="w-4 h-4 text-riot-accent" />
-              <span>Simulate 10-Player Live Game</span>
-            </button>
-          </div>
+          <button
+            onClick={onToggleMock}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
+              isMockActive
+                ? "bg-riot-accent/20 border-riot-accent text-riot-accent shadow-neon-pink"
+                : "bg-riot-surface border-riot-border text-slate-300 hover:border-slate-500"
+            }`}
+          >
+            <PlayCircle className="w-4 h-4 text-riot-accent" />
+            <span>Simulate 10-Player Live Game</span>
+          </button>
         </div>
       </div>
     );
@@ -126,20 +113,19 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
 
   const { activePlayer, allPlayers = [], events, gameData } = liveState.data;
 
-  // Match the active user in allPlayers
+  // Active user in game
   const activeUserInGame =
     allPlayers.find((p) => p.summonerName === activePlayer.summonerName) || allPlayers[0];
   const userTeam = activeUserInGame?.team || "ORDER";
-  const userPosition = activeUserInGame?.position || "MIDDLE";
 
   const orderTeam = allPlayers.filter((p) => p.team === "ORDER");
   const chaosTeam = allPlayers.filter((p) => p.team === "CHAOS");
 
   const isUserOrder = userTeam === "ORDER";
-  const allyTeam = isUserOrder ? orderTeam : chaosTeam;
-  const enemyTeam = isUserOrder ? chaosTeam : orderTeam;
+  const blueTeam = isUserOrder ? orderTeam : chaosTeam;
+  const redTeam = isUserOrder ? chaosTeam : orderTeam;
 
-  // Calculate estimated gold for each player based on items + kills/assists/CS
+  // Gold calculation
   const calculatePlayerGold = (p: LivePlayer): number => {
     const isPlayerSelf = p.summonerName === activePlayer.summonerName;
     const itemsTotal = (p.items || []).reduce((acc, it) => acc + (it.price || 0), 0);
@@ -150,39 +136,28 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
     return itemsTotal + scoreGold;
   };
 
-  const allyTotalGold = allyTeam.reduce((acc, p) => acc + calculatePlayerGold(p), 0);
-  const enemyTotalGold = enemyTeam.reduce((acc, p) => acc + calculatePlayerGold(p), 0);
-  const teamGoldDiff = allyTotalGold - enemyTotalGold;
+  const blueTotalGold = blueTeam.reduce((acc, p) => acc + calculatePlayerGold(p), 0);
+  const redTotalGold = redTeam.reduce((acc, p) => acc + calculatePlayerGold(p), 0);
+  const teamGoldDiff = blueTotalGold - redTotalGold;
 
-  const allyKills = allyTeam.reduce((acc, p) => acc + (p.scores?.kills || 0), 0);
-  const enemyKills = enemyTeam.reduce((acc, p) => acc + (p.scores?.kills || 0), 0);
+  const blueKills = blueTeam.reduce((acc, p) => acc + (p.scores?.kills || 0), 0);
+  const redKills = redTeam.reduce((acc, p) => acc + (p.scores?.kills || 0), 0);
 
-  // Parse Live In-Game Objectives from events.Events
+  // Objectives from events.Events
   const allEvents = events?.Events || [];
-  const allyDragons = allEvents.filter(
-    (e) => e.EventName === "DragonKill" && allyTeam.some((p) => p.summonerName === (e as any).KillerName)
+  const blueDragons = allEvents.filter(
+    (e) => e.EventName === "DragonKill" && blueTeam.some((p) => p.summonerName === (e as any).KillerName)
   ).length;
-  const enemyDragons = allEvents.filter(
-    (e) => e.EventName === "DragonKill" && enemyTeam.some((p) => p.summonerName === (e as any).KillerName)
-  ).length;
-
-  const allyTowers = allEvents.filter(
-    (e) => e.EventName === "TurretKilled" && allyTeam.some((p) => p.summonerName === (e as any).KillerName)
-  ).length;
-  const enemyTowers = allEvents.filter(
-    (e) => e.EventName === "TurretKilled" && enemyTeam.some((p) => p.summonerName === (e as any).KillerName)
+  const redDragons = allEvents.filter(
+    (e) => e.EventName === "DragonKill" && redTeam.some((p) => p.summonerName === (e as any).KillerName)
   ).length;
 
-  // Direct 1v1 Lane Opponent
-  const laneOpponent =
-    enemyTeam.find((p) => p.position === userPosition) ||
-    enemyTeam[0];
-
-  const userGold = calculatePlayerGold(activeUserInGame);
-  const opponentGold = laneOpponent ? calculatePlayerGold(laneOpponent) : 0;
-  const laneGoldDiff = userGold - opponentGold;
-  const laneLevelDiff = (activeUserInGame?.level || 1) - (laneOpponent?.level || 1);
-  const laneCsDiff = (activeUserInGame?.scores?.creepScore || 0) - (laneOpponent?.scores?.creepScore || 0);
+  const blueTowers = allEvents.filter(
+    (e) => e.EventName === "TurretKilled" && blueTeam.some((p) => p.summonerName === (e as any).KillerName)
+  ).length;
+  const redTowers = allEvents.filter(
+    (e) => e.EventName === "TurretKilled" && redTeam.some((p) => p.summonerName === (e as any).KillerName)
+  ).length;
 
   interface SegregatedItems {
     questItem: LiveItem | null;
@@ -190,7 +165,6 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
     trinketItem: LiveItem | null;
   }
 
-  // Helper to separate items into: Quest Item, Regular 6 slots, and Trinket
   const segregatePlayerItems = (rawItems: LiveItem[] = []): SegregatedItems => {
     let questItem: LiveItem | null = null;
     let trinketItem: LiveItem | null = null;
@@ -218,7 +192,6 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
     return { questItem, normalItems, trinketItem };
   };
 
-  // Helper to render keystones and secondary boots rune
   const renderRuneBadges = (p: LivePlayer) => {
     const rawRunes = (p.runes as any) || {};
     const keystoneName = rawRunes?.keystone?.displayName || "";
@@ -228,92 +201,87 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
       icon: "✨",
     };
 
-    // Check if player has Magical Footwear rune or item
     const hasBootsRune =
       rawRunes?.hasMagicalFootwear ||
       (p.items || []).some((it) => it.itemID === 2422 || it.displayName?.includes("Footwear"));
 
     return (
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-1 shrink-0">
         {keystoneName && (
           <span
-            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border flex items-center gap-1 ${style.color} ${style.bg}`}
+            className={`text-[9px] font-bold px-1 py-0.2 rounded border flex items-center gap-0.5 ${style.color} ${style.bg}`}
             title={`Keystone: ${keystoneName}`}
           >
             <span>{style.icon}</span>
-            <span>{keystoneName}</span>
+            <span className="truncate max-w-[55px]">{keystoneName}</span>
           </span>
         )}
         {hasBootsRune && (
           <span
-            className="text-[10px] font-bold px-1.5 py-0.5 rounded-md border text-cyan-300 border-cyan-400/40 bg-cyan-500/15 flex items-center gap-1"
-            title="Magical Footwear Rune Active (Free 300g Boots)"
+            className="text-[9px] font-bold px-1 py-0.2 rounded border text-cyan-300 border-cyan-400/40 bg-cyan-500/15 flex items-center gap-0.5 shrink-0"
+            title="Magical Footwear Active"
           >
-            <Footprints className="w-3 h-3 text-cyan-300" />
-            <span>Boots Rune</span>
+            <Footprints className="w-2.5 h-2.5 text-cyan-300" />
+            <span>Boots</span>
           </span>
         )}
       </div>
     );
   };
 
-  // Helper to render a player's item row: [QUEST] | [SLOT 1..6] | [TRINKET]
   const renderItemBar = (p: LivePlayer) => {
     const { questItem, normalItems, trinketItem } = segregatePlayerItems(p.items || []);
 
     return (
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1 shrink-0">
         {/* Quest Item Slot (Left) */}
         <div
-          className={`w-7 h-7 rounded-lg overflow-hidden border flex items-center justify-center shrink-0 relative ${
+          className={`w-6 h-6 rounded-md overflow-hidden border flex items-center justify-center shrink-0 relative ${
             questItem
-              ? "border-riot-gold shadow-[0_0_8px_rgba(251,191,36,0.25)] bg-riot-darkest"
-              : "border-dashed border-riot-border/50 bg-riot-darkest/40"
+              ? "border-riot-gold bg-riot-darkest shadow-[0_0_6px_rgba(251,191,36,0.3)]"
+              : "border-dashed border-slate-700/60 bg-riot-darkest/40"
           }`}
-          title={questItem ? `Quest Item: ${(questItem as LiveItem).displayName}` : "Empty Quest Slot (Support / Jungle)"}
+          title={questItem ? `Quest Item: ${(questItem as LiveItem).displayName}` : "Quest Slot"}
         >
           {questItem ? (
-            <ItemTooltip itemId={(questItem as LiveItem).itemID} size="sm" />
+            <ItemTooltip itemId={(questItem as LiveItem).itemID} size="xs" />
           ) : (
-            <span className="text-[8px] font-mono text-slate-600 uppercase font-black">Q</span>
-          )}
-          {questItem && (
-            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-riot-gold animate-pulse" />
+            <span className="text-[7px] font-mono text-slate-600 font-bold">Q</span>
           )}
         </div>
 
-        <div className="h-5 w-[1px] bg-riot-border/50 mx-0.5" />
+        <div className="h-4 w-[1px] bg-slate-700/50" />
 
-        {/* 6 Normal Item Slots (Middle) */}
-        <div className="flex items-center gap-1">
+        {/* 6 Normal Slots */}
+        <div className="flex items-center gap-0.5">
           {Array.from({ length: 6 }).map((_, idx) => {
             const it = normalItems[idx];
             return (
               <div
                 key={idx}
-                className="w-7 h-7 rounded-lg bg-riot-darkest border border-riot-border/70 overflow-hidden flex items-center justify-center shrink-0"
+                className="w-6 h-6 rounded-md bg-riot-darkest border border-riot-border/70 overflow-hidden flex items-center justify-center shrink-0"
               >
                 {it && it.itemID > 0 ? (
-                  <ItemTooltip itemId={it.itemID} size="sm" />
+                  <ItemTooltip itemId={it.itemID} size="xs" />
                 ) : (
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
+                  <div className="w-1 h-1 rounded-full bg-slate-800" />
                 )}
               </div>
             );
           })}
         </div>
 
-        <div className="h-5 w-[1px] bg-riot-border/50 mx-0.5" />
+        <div className="h-4 w-[1px] bg-slate-700/50" />
 
         {/* Dedicated Trinket Slot (Right) */}
         <div
-          className="w-7 h-7 rounded-full bg-riot-darkest border border-riot-gold/50 overflow-hidden flex items-center justify-center shrink-0"
+          className="w-6 h-6 rounded-full bg-riot-darkest border border-riot-gold/50 overflow-hidden flex items-center justify-center shrink-0"
           title={trinketItem ? `Trinket: ${(trinketItem as LiveItem).displayName}` : "No Trinket"}
         >
           {trinketItem ? (
-            <ItemTooltip itemId={(trinketItem as LiveItem).itemID} size="sm" isTrinket />
+            <ItemTooltip itemId={(trinketItem as LiveItem).itemID} size="xs" isTrinket />
           ) : (
-            <Eye className="w-3 h-3 text-slate-600" />
+            <Eye className="w-2.5 h-2.5 text-slate-600" />
           )}
         </div>
       </div>
@@ -321,496 +289,275 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2.5">
       {/* ========================================================= */}
-      {/* 1. TOP BANNER: LIVE CLOCK & TEAM OBJECTIVES FACE-OFF       */}
+      {/* 1. TOP COMPACT BAR: BLUE TEAM vs RED TEAM + OBJECTIVES     */}
       {/* ========================================================= */}
-      <div className="bg-gradient-to-r from-riot-card via-riot-surface to-riot-card border border-pink-500/40 rounded-3xl p-5 shadow-neon-pink relative overflow-hidden transition-all">
-        {/* Seraphine Cosmic Glow */}
-        <div className="absolute top-0 right-0 w-96 h-full bg-gradient-to-l from-pink-500/10 via-indigo-500/5 to-transparent pointer-events-none" />
-
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-riot-border/60 pb-4">
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon-win opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-neon-win"></span>
-            </span>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider text-neon-win">
-                  Live Match Active
-                </span>
-                <span className="text-slate-500 text-xs">•</span>
-                <span className="text-xs font-semibold text-slate-300">
-                  {gameData.gameMode || "Summoner's Rift"}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Real-time 10-player radar polling local League client engine
-              </p>
+      <div className="rounded-2xl border border-riot-border/80 bg-riot-darkest/95 p-3 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+        {/* BLUE TEAM SCORE (LEFT) */}
+        <div className="flex items-center gap-3 bg-cyan-950/40 border border-cyan-500/40 px-3.5 py-1.5 rounded-xl shadow-[0_0_12px_rgba(34,211,238,0.15)]">
+          <span className="w-3 h-3 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] shrink-0" />
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-cyan-300">
+                🔷 BLUE TEAM {isUserOrder && "(YOU)"}
+              </span>
+              <span className="text-xs font-mono font-bold text-cyan-200">
+                {blueTotalGold.toLocaleString()}g
+              </span>
+            </div>
+            <div className="text-[11px] font-mono text-cyan-200/80 flex items-center gap-2">
+              <span>Kills: <strong className="text-white">{blueKills}</strong></span>
+              <span>•</span>
+              <span>🐉 {blueDragons}</span>
+              <span>•</span>
+              <span>🏰 {blueTowers}</span>
             </div>
           </div>
+        </div>
 
-          {/* Sub-tabs & Simulation Toggle */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-riot-darkest/80 border border-riot-border/70 p-1 rounded-xl text-xs font-bold">
-              <button
-                onClick={() => setActiveSubTab("faceoff")}
-                className={`px-3 py-1 rounded-lg transition-all ${
-                  activeSubTab === "faceoff"
-                    ? "bg-riot-accent text-white shadow-neon-pink"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                10-Player Face-Off
-              </button>
-              <button
-                onClick={() => setActiveSubTab("personal")}
-                className={`px-3 py-1 rounded-lg transition-all ${
-                  activeSubTab === "personal"
-                    ? "bg-riot-accent text-white shadow-neon-pink"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                My Champion Stats
-              </button>
-            </div>
-
-            {isMockActive && (
-              <button
-                onClick={onToggleMock}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold hover:bg-rose-500/20"
-                title="Stop Simulation"
-              >
-                <StopCircle className="w-3.5 h-3.5" />
-                <span>Stop Sim</span>
-              </button>
+        {/* CENTER: LIVE CLOCK & GOLD LEAD PILL */}
+        <div className="flex flex-col items-center shrink-0">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-riot-surface border border-riot-border text-xs text-slate-100 font-mono">
+            <span className="w-2 h-2 rounded-full bg-neon-win animate-ping shrink-0" />
+            <Clock className="w-3.5 h-3.5 text-riot-accent" />
+            <strong className="tracking-wider text-sm">{formatTime(gameData.gameTime || 0)}</strong>
+          </div>
+          <div className="mt-1 text-[11px] font-mono font-bold">
+            {teamGoldDiff > 0 ? (
+              <span className="text-cyan-300 bg-cyan-500/15 px-2 py-0.5 rounded border border-cyan-500/30">
+                +{(teamGoldDiff).toLocaleString()}g Blue Lead
+              </span>
+            ) : teamGoldDiff < 0 ? (
+              <span className="text-rose-300 bg-rose-500/15 px-2 py-0.5 rounded border border-rose-500/30">
+                +{Math.abs(teamGoldDiff).toLocaleString()}g Red Lead
+              </span>
+            ) : (
+              <span className="text-slate-400">Even Gold</span>
             )}
           </div>
         </div>
 
-        {/* Big Team Face-Off Header (Kills, Gold, Dragons, Towers, Clock) */}
-        <div className="pt-4 flex flex-col md:flex-row items-center justify-between gap-6">
-          {/* Blue / Order Team Stats */}
-          <div className="flex items-center gap-4 w-full md:w-auto">
-            <span className="w-3.5 h-3.5 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee] shrink-0" />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-black uppercase text-slate-100">
-                  {isUserOrder ? "Your Team (Blue)" : "Enemy Team (Blue)"}
-                </span>
-                <span className="text-xs font-mono font-bold text-cyan-300">
-                  {allyTotalGold.toLocaleString()}g
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-slate-400 mt-1 font-mono">
-                <span>Kills: <strong className="text-slate-100">{allyKills}</strong></span>
-                <span>•</span>
-                <span>🐉 Dragons: <strong className="text-slate-200">{allyDragons}</strong></span>
-                <span>•</span>
-                <span>🏰 Turrets: <strong className="text-slate-200">{allyTowers}</strong></span>
-              </div>
+        {/* RED TEAM SCORE (RIGHT) */}
+        <div className="flex items-center justify-end gap-3 bg-rose-950/40 border border-rose-500/40 px-3.5 py-1.5 rounded-xl text-right shadow-[0_0_12px_rgba(244,63,94,0.15)]">
+          <div>
+            <div className="flex items-center justify-end gap-2">
+              <span className="text-xs font-mono font-bold text-rose-200">
+                {redTotalGold.toLocaleString()}g
+              </span>
+              <span className="text-xs font-black uppercase tracking-wider text-rose-300">
+                🔴 RED TEAM {!isUserOrder && "(YOU)"}
+              </span>
+            </div>
+            <div className="text-[11px] font-mono text-rose-200/80 flex items-center justify-end gap-2">
+              <span>🏰 {redTowers}</span>
+              <span>•</span>
+              <span>🐉 {redDragons}</span>
+              <span>•</span>
+              <span>Kills: <strong className="text-white">{redKills}</strong></span>
             </div>
           </div>
-
-          {/* Center: Live Clock & Team Gold Diff */}
-          <div className="flex flex-col items-center shrink-0">
-            <div className="flex items-center gap-2 px-4 py-1.5 rounded-2xl bg-riot-darkest border border-riot-border text-sm text-slate-100 font-mono shadow-inner">
-              <Clock className="w-4 h-4 text-riot-accent animate-pulse" />
-              <span className="font-extrabold tracking-wider">{formatTime(gameData.gameTime || 0)}</span>
-            </div>
-            <div className="mt-1.5 text-xs font-mono font-bold">
-              {teamGoldDiff > 0 ? (
-                <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                  +{teamGoldDiff.toLocaleString()}g Team Lead
-                </span>
-              ) : teamGoldDiff < 0 ? (
-                <span className="text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
-                  {teamGoldDiff.toLocaleString()}g Team Deficit
-                </span>
-              ) : (
-                <span className="text-slate-400">Even Team Gold</span>
-              )}
-            </div>
-          </div>
-
-          {/* Red / Chaos Team Stats */}
-          <div className="flex items-center justify-end gap-4 w-full md:w-auto text-right">
-            <div>
-              <div className="flex items-center justify-end gap-2">
-                <span className="text-xs font-mono font-bold text-rose-300">
-                  {enemyTotalGold.toLocaleString()}g
-                </span>
-                <span className="text-sm font-black uppercase text-slate-100">
-                  {!isUserOrder ? "Your Team (Red)" : "Enemy Team (Red)"}
-                </span>
-              </div>
-              <div className="flex items-center justify-end gap-3 text-xs text-slate-400 mt-1 font-mono">
-                <span>🏰 Turrets: <strong className="text-slate-200">{enemyTowers}</strong></span>
-                <span>•</span>
-                <span>🐉 Dragons: <strong className="text-slate-200">{enemyDragons}</strong></span>
-                <span>•</span>
-                <span>Kills: <strong className="text-slate-100">{enemyKills}</strong></span>
-              </div>
-            </div>
-            <span className="w-3.5 h-3.5 rounded-full bg-rose-500 shadow-[0_0_10px_#f43f5e] shrink-0" />
-          </div>
+          <span className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] shrink-0" />
         </div>
+
+        {isMockActive && (
+          <button
+            onClick={onToggleMock}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[11px] font-bold hover:bg-rose-500/25 transition-all"
+            title="Stop Simulation"
+          >
+            <StopCircle className="w-3 h-3" />
+            <span>Stop Sim</span>
+          </button>
+        )}
       </div>
 
       {/* ========================================================= */}
-      {/* 2. FEATURED SPOTLIGHT: 1v1 LANE FACE-OFF                  */}
+      {/* 2. 5-ROW COMPACT MATCHUP MATRIX (ZERO SCROLL FIT)         */}
       {/* ========================================================= */}
-      {laneOpponent && (
-        <div className="bg-riot-surface/70 border border-riot-accent/40 rounded-3xl p-5 shadow-2xl relative overflow-hidden">
-          <div className="flex items-center justify-between border-b border-riot-border/50 pb-3 mb-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-riot-accent" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-100">
-                Lane Face-Off: {POSITION_LABELS[userPosition] || userPosition} Matchup
-              </h3>
-            </div>
-            <span className="text-[11px] font-mono text-slate-400">
-              Direct Opponent Telemetry
-            </span>
-          </div>
+      <div className="space-y-1.5">
+        {POSITION_ORDER.map((pos) => {
+          const bluePlayer = blueTeam.find((p) => p.position === pos) || blueTeam[0];
+          const redPlayer = redTeam.find((p) => p.position === pos) || redTeam[0];
 
-          <div className="grid grid-cols-1 lg:grid-cols-11 gap-4 items-center">
-            {/* Left: YOU */}
-            <div className="lg:col-span-5 bg-riot-darkest/70 border border-riot-accent/30 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-riot-accent shrink-0">
+          if (!bluePlayer || !redPlayer) return null;
+
+          const isUserBlue = bluePlayer.summonerName === activePlayer.summonerName;
+          const isUserRed = redPlayer.summonerName === activePlayer.summonerName;
+          const isUserLane = isUserBlue || isUserRed;
+
+          const bGold = calculatePlayerGold(bluePlayer);
+          const rGold = calculatePlayerGold(redPlayer);
+          const gDiff = bGold - rGold;
+          const lDiff = bluePlayer.level - redPlayer.level;
+
+          return (
+            <div
+              key={pos}
+              className={`rounded-xl border transition-all p-2 flex items-center justify-between gap-2.5 ${
+                isUserLane
+                  ? "bg-riot-card/95 border-riot-accent shadow-[0_0_15px_rgba(236,72,153,0.25)] ring-1 ring-riot-accent/40"
+                  : "bg-riot-darkest/80 border-riot-border/60 hover:border-slate-600"
+              }`}
+            >
+              {/* ================= BLUE PLAYER (LEFT) ================= */}
+              <div className="flex items-center justify-between flex-1 gap-2 bg-gradient-to-r from-cyan-950/40 via-cyan-950/20 to-transparent p-1.5 rounded-lg border-l-2 border-l-cyan-400">
+                {/* Champion Avatar & Identity */}
+                <div className="flex items-center gap-2">
+                  <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-cyan-400/60 shrink-0">
                     <img
-                      src={getChampionIconUrl(activeUserInGame.championName)}
-                      alt={activeUserInGame.championName}
-                      className="w-full h-full object-cover"
+                      src={getChampionIconUrl(bluePlayer.championName)}
+                      alt={bluePlayer.championName}
+                      className={`w-full h-full object-cover ${bluePlayer.isDead ? "grayscale" : ""}`}
                     />
-                    <span className="absolute bottom-0 right-0 bg-black/85 text-[9px] font-bold px-1 rounded-tl text-slate-200">
-                      Lv {activeUserInGame.level}
+                    <span className="absolute bottom-0 right-0 bg-black/85 text-[8px] font-bold px-0.5 rounded-tl text-cyan-200">
+                      {bluePlayer.level}
                     </span>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-slate-100">
-                        {activeUserInGame.championName}
-                      </h4>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-riot-accent/20 text-riot-accent border border-riot-accent/30 font-semibold">
-                        You
-                      </span>
-                    </div>
-                    <div className="text-xs font-mono text-slate-400 mt-0.5">
-                      {activeUserInGame.scores.kills} / <span className="text-neon-loss">{activeUserInGame.scores.deaths}</span> / {activeUserInGame.scores.assists} • {activeUserInGame.scores.creepScore} CS
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-right font-mono text-xs">
-                  <div className="text-slate-400 text-[10px]">Net Worth</div>
-                  <div className="font-extrabold text-riot-gold text-sm">
-                    {userGold.toLocaleString()}g
-                  </div>
-                </div>
-              </div>
-
-              {/* Keystone & Boots Rune */}
-              {renderRuneBadges(activeUserInGame)}
-
-              {/* Items Bar */}
-              <div className="pt-1">{renderItemBar(activeUserInGame)}</div>
-            </div>
-
-            {/* Center: VERSUS & DIFFERENTIAL PILL */}
-            <div className="lg:col-span-1 flex flex-col items-center justify-center gap-2 py-2">
-              <div className="w-10 h-10 rounded-full bg-riot-surface border border-riot-border flex items-center justify-center font-black text-xs text-riot-accent shadow-neon-pink">
-                VS
-              </div>
-              <div className="flex flex-col items-center gap-1 font-mono text-[11px] font-bold">
-                {laneGoldDiff > 0 ? (
-                  <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 text-center">
-                    +{laneGoldDiff.toLocaleString()}g
-                  </span>
-                ) : laneGoldDiff < 0 ? (
-                  <span className="text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 text-center">
-                    {laneGoldDiff.toLocaleString()}g
-                  </span>
-                ) : (
-                  <span className="text-slate-400">Even Gold</span>
-                )}
-
-                {laneLevelDiff > 0 ? (
-                  <span className="text-emerald-300 text-[10px]">+{laneLevelDiff} Lv Ahead</span>
-                ) : laneLevelDiff < 0 ? (
-                  <span className="text-rose-300 text-[10px]">{laneLevelDiff} Lv Behind</span>
-                ) : (
-                  <span className="text-slate-400 text-[10px]">Even Lv</span>
-                )}
-
-                {laneCsDiff !== 0 ? (
-                  <span className={`text-[10px] ${laneCsDiff > 0 ? "text-emerald-300" : "text-rose-300"}`}>
-                    {laneCsDiff > 0 ? `+${laneCsDiff} CS` : `${laneCsDiff} CS`}
-                  </span>
-                ) : (
-                  <span className="text-slate-400 text-[10px]">Even CS</span>
-                )}
-              </div>
-            </div>
-
-            {/* Right: OPPONENT */}
-            <div className="lg:col-span-5 bg-riot-darkest/70 border border-riot-border/60 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-rose-500/60 shrink-0">
-                    <img
-                      src={getChampionIconUrl(laneOpponent.championName)}
-                      alt={laneOpponent.championName}
-                      className="w-full h-full object-cover"
-                    />
-                    <span className="absolute bottom-0 right-0 bg-black/85 text-[9px] font-bold px-1 rounded-tl text-slate-200">
-                      Lv {laneOpponent.level}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-slate-100">
-                        {laneOpponent.championName}
-                      </h4>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold">
-                        Opponent
-                      </span>
-                    </div>
-                    <div className="text-xs font-mono text-slate-400 mt-0.5">
-                      {laneOpponent.scores.kills} / <span className="text-neon-loss">{laneOpponent.scores.deaths}</span> / {laneOpponent.scores.assists} • {laneOpponent.scores.creepScore} CS
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-right font-mono text-xs">
-                  <div className="text-slate-400 text-[10px]">Net Worth</div>
-                  <div className="font-extrabold text-slate-200 text-sm">
-                    {opponentGold.toLocaleString()}g
-                  </div>
-                </div>
-              </div>
-
-              {/* Keystone & Boots Rune */}
-              {renderRuneBadges(laneOpponent)}
-
-              {/* Items Bar */}
-              <div className="pt-1">{renderItemBar(laneOpponent)}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* 3. FULL 5v5 TEAM ROSTER FACE-OFF                          */}
-      {/* ========================================================= */}
-      {activeSubTab === "faceoff" ? (
-        <div className="bg-riot-surface/60 border border-riot-border rounded-3xl p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-riot-border/50 pb-3">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-riot-accent" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-100">
-                5v5 Role Matchup Matrix
-              </h3>
-            </div>
-            <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                Your Team (Blue)
-              </span>
-              <span>vs</span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                Enemy Team (Red)
-              </span>
-            </div>
-          </div>
-
-          {/* Lane by lane matchups */}
-          <div className="space-y-3">
-            {POSITION_ORDER.map((pos) => {
-              const allyPlayer = allyTeam.find((p) => p.position === pos) || allyTeam[0];
-              const enemyPlayer = enemyTeam.find((p) => p.position === pos) || enemyTeam[0];
-
-              if (!allyPlayer || !enemyPlayer) return null;
-
-              const isUserLane = allyPlayer.summonerName === activePlayer.summonerName;
-              const aGold = calculatePlayerGold(allyPlayer);
-              const eGold = calculatePlayerGold(enemyPlayer);
-              const gDiff = aGold - eGold;
-              const lDiff = allyPlayer.level - enemyPlayer.level;
-
-              return (
-                <div
-                  key={pos}
-                  className={`rounded-2xl border transition-all p-3 flex flex-col xl:flex-row items-center justify-between gap-4 ${
-                    isUserLane
-                      ? "bg-riot-card/90 border-riot-accent shadow-neon-pink"
-                      : "bg-riot-darkest/60 border-riot-border/60 hover:border-riot-border"
-                  }`}
-                >
-                  {/* Ally Player (Left) */}
-                  <div className="flex items-center justify-between w-full xl:w-5/12 gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-cyan-400/50 shrink-0">
-                        <img
-                          src={getChampionIconUrl(allyPlayer.championName)}
-                          alt={allyPlayer.championName}
-                          className={`w-full h-full object-cover ${allyPlayer.isDead ? "grayscale" : ""}`}
-                        />
-                        <span className="absolute bottom-0 right-0 bg-black/85 text-[8px] font-bold px-1 rounded-tl text-slate-200">
-                          {allyPlayer.level}
-                        </span>
-                        {allyPlayer.isDead && (
-                          <div className="absolute inset-0 bg-black/75 flex items-center justify-center text-[10px] font-mono font-black text-rose-400">
-                            {allyPlayer.respawnTimer}s
-                          </div>
-                        )}
+                    {bluePlayer.isDead && (
+                      <div className="absolute inset-0 bg-black/75 flex items-center justify-center text-[9px] font-mono font-black text-rose-400">
+                        {bluePlayer.respawnTimer}s
                       </div>
-
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-slate-100">
-                            {allyPlayer.championName}
-                          </span>
-                          {isUserLane && (
-                            <span className="text-[9px] px-1 py-0.2 rounded bg-riot-accent/20 text-riot-accent font-bold">
-                              YOU
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[11px] font-mono text-slate-400">
-                          {allyPlayer.scores.kills}/{allyPlayer.scores.deaths}/{allyPlayer.scores.assists} • {aGold.toLocaleString()}g
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-1">
-                      {renderRuneBadges(allyPlayer)}
-                      {renderItemBar(allyPlayer)}
-                    </div>
+                    )}
                   </div>
 
-                  {/* Center Matchup Pill (Lane Role, Gold Diff, Level Diff) */}
-                  <div className="flex flex-col items-center justify-center shrink-0 w-28 py-1">
-                    <span className="text-[10px] uppercase font-black tracking-wider text-slate-400 bg-riot-surface border border-riot-border/60 px-2 py-0.5 rounded-full">
-                      {POSITION_LABELS[pos] || pos}
-                    </span>
-                    <div className="text-[10px] font-mono font-bold mt-1">
-                      {gDiff > 0 ? (
-                        <span className="text-emerald-400">+{gDiff.toLocaleString()}g</span>
-                      ) : gDiff < 0 ? (
-                        <span className="text-rose-400">{gDiff.toLocaleString()}g</span>
-                      ) : (
-                        <span className="text-slate-500">Even</span>
-                      )}
-                      {lDiff !== 0 && (
-                        <span className={`ml-1 ${lDiff > 0 ? "text-emerald-300" : "text-rose-300"}`}>
-                          ({lDiff > 0 ? `+${lDiff}` : lDiff} Lv)
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-slate-100">
+                        {bluePlayer.championName}
+                      </span>
+                      {isUserBlue && (
+                        <span className="text-[8px] px-1 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40">
+                          YOU
                         </span>
                       )}
                     </div>
-                  </div>
-
-                  {/* Enemy Player (Right) */}
-                  <div className="flex items-center justify-between w-full xl:w-5/12 gap-3">
-                    <div className="flex flex-col items-start gap-1">
-                      {renderRuneBadges(enemyPlayer)}
-                      {renderItemBar(enemyPlayer)}
+                    <div className="text-[10px] font-mono text-slate-400">
+                      {bluePlayer.scores.kills}/{bluePlayer.scores.deaths}/{bluePlayer.scores.assists} • {bluePlayer.scores.creepScore}cs • <strong className="text-cyan-300">{bGold.toLocaleString()}g</strong>
                     </div>
+                  </div>
+                </div>
 
-                    <div className="flex items-center justify-end gap-3 text-right">
-                      <div>
-                        <div className="text-xs font-bold text-slate-100">
-                          {enemyPlayer.championName}
-                        </div>
-                        <div className="text-[11px] font-mono text-slate-400">
-                          {enemyPlayer.scores.kills}/{enemyPlayer.scores.deaths}/{enemyPlayer.scores.assists} • {eGold.toLocaleString()}g
-                        </div>
-                      </div>
+                {/* Keystone & Items */}
+                <div className="flex items-center gap-1.5">
+                  {renderRuneBadges(bluePlayer)}
+                  {renderItemBar(bluePlayer)}
+                </div>
+              </div>
 
-                      <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-rose-500/50 shrink-0">
-                        <img
-                          src={getChampionIconUrl(enemyPlayer.championName)}
-                          alt={enemyPlayer.championName}
-                          className={`w-full h-full object-cover ${enemyPlayer.isDead ? "grayscale" : ""}`}
-                        />
-                        <span className="absolute bottom-0 right-0 bg-black/85 text-[8px] font-bold px-1 rounded-tl text-slate-200">
-                          {enemyPlayer.level}
+              {/* ================= CENTER MATCHUP PILL ================= */}
+              <div className="flex flex-col items-center justify-center shrink-0 w-20 py-0.5">
+                <span className="text-[9px] uppercase font-black tracking-wider text-slate-300 bg-riot-surface border border-riot-border px-1.5 py-0.2 rounded">
+                  {POSITION_SHORT_LABELS[pos] || pos}
+                </span>
+                <div className="text-[10px] font-mono font-bold mt-0.5">
+                  {gDiff > 0 ? (
+                    <span className="text-cyan-300">+{gDiff.toLocaleString()}g</span>
+                  ) : gDiff < 0 ? (
+                    <span className="text-rose-300">{gDiff.toLocaleString()}g</span>
+                  ) : (
+                    <span className="text-slate-500">Even</span>
+                  )}
+                  {lDiff !== 0 && (
+                    <span className={`ml-1 text-[9px] ${lDiff > 0 ? "text-cyan-300" : "text-rose-300"}`}>
+                      {lDiff > 0 ? `+${lDiff}L` : `${lDiff}L`}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* ================= RED PLAYER (RIGHT) ================= */}
+              <div className="flex items-center justify-between flex-1 gap-2 bg-gradient-to-l from-rose-950/40 via-rose-950/20 to-transparent p-1.5 rounded-lg border-r-2 border-r-rose-500 text-right">
+                {/* Keystone & Items */}
+                <div className="flex items-center gap-1.5">
+                  {renderItemBar(redPlayer)}
+                  {renderRuneBadges(redPlayer)}
+                </div>
+
+                {/* Champion Avatar & Identity */}
+                <div className="flex items-center justify-end gap-2">
+                  <div>
+                    <div className="flex items-center justify-end gap-1.5">
+                      {isUserRed && (
+                        <span className="text-[8px] px-1 py-0.2 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/40">
+                          YOU
                         </span>
-                        {enemyPlayer.isDead && (
-                          <div className="absolute inset-0 bg-black/75 flex items-center justify-center text-[10px] font-mono font-black text-rose-400">
-                            {enemyPlayer.respawnTimer}s
-                          </div>
-                        )}
-                      </div>
+                      )}
+                      <span className="text-xs font-bold text-slate-100">
+                        {redPlayer.championName}
+                      </span>
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-400">
+                      <strong className="text-rose-300">{rGold.toLocaleString()}g</strong> • {redPlayer.scores.creepScore}cs • {redPlayer.scores.kills}/{redPlayer.scores.deaths}/{redPlayer.scores.assists}
                     </div>
                   </div>
+
+                  <div className="relative w-9 h-9 rounded-lg overflow-hidden border border-rose-500/60 shrink-0">
+                    <img
+                      src={getChampionIconUrl(redPlayer.championName)}
+                      alt={redPlayer.championName}
+                      className={`w-full h-full object-cover ${redPlayer.isDead ? "grayscale" : ""}`}
+                    />
+                    <span className="absolute bottom-0 right-0 bg-black/85 text-[8px] font-bold px-0.5 rounded-tl text-rose-200">
+                      {redPlayer.level}
+                    </span>
+                    {redPlayer.isDead && (
+                      <div className="absolute inset-0 bg-black/75 flex items-center justify-center text-[9px] font-mono font-black text-rose-400">
+                        {redPlayer.respawnTimer}s
+                      </div>
+                    )}
+                  </div>
                 </div>
-              );
-            })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ========================================================= */}
+      {/* 3. COMPACT FOOTER STRIP: YOUR LIVE COMBAT ATTRIBUTES       */}
+      {/* ========================================================= */}
+      <div className="rounded-xl border border-riot-border/70 bg-riot-darkest/90 px-3.5 py-2 flex flex-wrap items-center justify-between gap-3 text-xs font-mono shadow-inner">
+        <div className="flex items-center gap-1.5 text-slate-300 font-sans font-bold text-[11px]">
+          <Crosshair className="w-3.5 h-3.5 text-riot-accent" />
+          <span>{activeUserInGame?.championName} Attributes:</span>
+        </div>
+
+        <div className="flex items-center gap-4 text-[11px] flex-wrap">
+          <div className="flex items-center gap-1" title="Current Wallet Gold">
+            <Coins className="w-3 h-3 text-riot-gold" />
+            <span className="text-slate-400">Gold:</span>
+            <strong className="text-riot-gold">{Math.round(activePlayer.currentGold || 0)}g</strong>
+          </div>
+
+          <div className="flex items-center gap-1" title="Attack Damage / Ability Power">
+            <Swords className="w-3 h-3 text-rose-400" />
+            <span className="text-slate-400">AD/AP:</span>
+            <strong className="text-slate-200">
+              {Math.round(activePlayer.championStats?.attackDamage || 0)} / {Math.round(activePlayer.championStats?.abilityPower || 0)}
+            </strong>
+          </div>
+
+          <div className="flex items-center gap-1" title="Armor / Magic Resist">
+            <Shield className="w-3 h-3 text-sky-400" />
+            <span className="text-slate-400">Armor/MR:</span>
+            <strong className="text-slate-200">
+              {Math.round(activePlayer.championStats?.armor || 0)} / {Math.round(activePlayer.championStats?.magicResist || 0)}
+            </strong>
+          </div>
+
+          <div className="flex items-center gap-1" title="Ability Haste">
+            <Zap className="w-3 h-3 text-amber-400" />
+            <span className="text-slate-400">AH:</span>
+            <strong className="text-slate-200">{Math.round(activePlayer.championStats?.abilityHaste || 0)}</strong>
+          </div>
+
+          <div className="flex items-center gap-1" title="Movement Speed">
+            <Footprints className="w-3 h-3 text-cyan-400" />
+            <span className="text-slate-400">MS:</span>
+            <strong className="text-slate-200">{Math.round(activePlayer.championStats?.moveSpeed || 0)}</strong>
           </div>
         </div>
-      ) : (
-        /* ========================================================= */
-        /* 4. PERSONAL LIVE COMBAT ATTRIBUTES                        */
-        /* ========================================================= */
-        <div className="bg-riot-surface/60 border border-riot-border rounded-3xl p-5 space-y-4">
-          <div className="flex items-center justify-between border-b border-riot-border/50 pb-3">
-            <h3 className="text-xs font-black uppercase tracking-wider text-slate-100 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-riot-accent" />
-              <span>Active Combat Attributes</span>
-            </h3>
-            <span className="text-xs font-mono text-slate-400">
-              Live Engine Memory Snapshot
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="p-3 rounded-xl bg-riot-darkest/70 border border-riot-border/70 flex items-center gap-3">
-              <Coins className="w-4 h-4 text-riot-gold shrink-0" />
-              <div>
-                <div className="text-[10px] text-slate-400">Current Gold</div>
-                <div className="font-extrabold text-riot-gold text-sm">
-                  {Math.round(activePlayer.currentGold || 0)}g
-                </div>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-riot-darkest/70 border border-riot-border/70 flex items-center gap-3">
-              <Swords className="w-4 h-4 text-rose-400 shrink-0" />
-              <div>
-                <div className="text-[10px] text-slate-400">Attack Damage / AP</div>
-                <div className="font-extrabold text-slate-100 text-sm">
-                  {Math.round(activePlayer.championStats?.attackDamage || 0)} AD / {Math.round(activePlayer.championStats?.abilityPower || 0)} AP
-                </div>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-riot-darkest/70 border border-riot-border/70 flex items-center gap-3">
-              <Shield className="w-4 h-4 text-sky-400 shrink-0" />
-              <div>
-                <div className="text-[10px] text-slate-400">Armor / Magic Resist</div>
-                <div className="font-extrabold text-slate-100 text-sm">
-                  {Math.round(activePlayer.championStats?.armor || 0)} / {Math.round(activePlayer.championStats?.magicResist || 0)}
-                </div>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-riot-darkest/70 border border-riot-border/70 flex items-center gap-3">
-              <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-              <div>
-                <div className="text-[10px] text-slate-400">Ability Haste</div>
-                <div className="font-extrabold text-slate-100 text-sm">
-                  {Math.round(activePlayer.championStats?.abilityHaste || 0)}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
