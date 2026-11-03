@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Header } from "./components/Header";
 import { StatsOverview } from "./components/StatsOverview";
+import { MmrGraph } from "./components/MmrGraph";
 import { LiveGameCard } from "./components/LiveGameCard";
 import { MatchHistoryTable } from "./components/MatchHistoryTable";
 import { SettingsModal } from "./components/SettingsModal";
-import { ParsedMatch, PlayerStatsSummary } from "./types/riot";
+import { ParsedMatch, PlayerStatsSummary, RankedEntry, MmrDataPoint } from "./types/riot";
 import { LivePollerState } from "./types/live";
 import {
   fetchRiotAccount,
@@ -13,6 +14,9 @@ import {
   parseRawMatch,
   computeSummaryStats,
   getRegionalRouting,
+  getPlatformId,
+  fetchLeagueEntries,
+  calculateMmrProgression,
   batchFetchMatches,
 } from "./services/riotApi";
 import { liveClientService } from "./services/liveClient";
@@ -38,6 +42,15 @@ export const App: React.FC = () => {
   // Match State
   const [matches, setMatches] = useState<ParsedMatch[]>([]);
   const [summary, setSummary] = useState<PlayerStatsSummary>(MOCK_SUMMARY);
+  const [rankedEntry, setRankedEntry] = useState<RankedEntry | null>({
+    queueType: "RANKED_SOLO_5x5",
+    tier: "GOLD",
+    rank: "IV",
+    leaguePoints: 45,
+    wins: 48,
+    losses: 36,
+  });
+  const [mmrDataPoints, setMmrDataPoints] = useState<MmrDataPoint[]>([]);
 
   // Live Poller State
   const [liveState, setLiveState] = useState<LivePollerState>({
@@ -72,10 +85,12 @@ export const App: React.FC = () => {
     if (cached && cached.length > 0) {
       setMatches(cached);
       setSummary(computeSummaryStats(cached));
+      setMmrDataPoints(calculateMmrProgression(cached, rankedEntry || undefined));
     } else {
       // Use high-fidelity mock matches for initial visual display
       setMatches(MOCK_MATCHES);
       setSummary(MOCK_SUMMARY);
+      setMmrDataPoints(calculateMmrProgression(MOCK_MATCHES, rankedEntry || undefined));
     }
   };
 
@@ -104,6 +119,20 @@ export const App: React.FC = () => {
           regionalRouting,
           preferences.apiKey
         );
+
+        // Fetch official Ranked Tier & LP from League-v4
+        let currentSoloRank: RankedEntry | null = null;
+        try {
+          const platformId = getPlatformId(region);
+          const entries = await fetchLeagueEntries(account.puuid, platformId, preferences.apiKey);
+          currentSoloRank =
+            entries.find((e) => e.queueType === "RANKED_SOLO_5x5") || entries[0] || null;
+          if (currentSoloRank) {
+            setRankedEntry(currentSoloRank);
+          }
+        } catch {
+          // ignore if unranked or lookup fails
+        }
 
         setStatusMessage({
           type: "info",
@@ -153,6 +182,9 @@ export const App: React.FC = () => {
           setMatches(validMatches);
           const computed = computeSummaryStats(validMatches);
           setSummary(computed);
+          setMmrDataPoints(
+            calculateMmrProgression(validMatches, currentSoloRank || rankedEntry || undefined)
+          );
           await saveMatchesToCache(validMatches);
 
           setStatusMessage({
@@ -249,7 +281,10 @@ export const App: React.FC = () => {
           summonerName={`${preferences.gameName}#${preferences.tagLine}`}
         />
 
-        {/* 2. Live Client Status Widget */}
+        {/* 2. Ranked MMR Trend Graph */}
+        <MmrGraph dataPoints={mmrDataPoints} currentRank={rankedEntry} />
+
+        {/* 3. Live Client Status Widget */}
         <LiveGameCard
           liveState={liveState}
           isMockActive={isMockLiveActive}

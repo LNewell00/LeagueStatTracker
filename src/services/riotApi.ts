@@ -5,12 +5,43 @@ import {
   RiotAccount,
   SUPPORTED_REGIONS,
   RegionalRouting,
+  RankedEntry,
+  MmrDataPoint,
 } from "../types/riot";
 import { isTauriEnvironment } from "./storage";
 
 export function getRegionalRouting(regionId: string): RegionalRouting {
   const match = SUPPORTED_REGIONS.find((r) => r.id.toLowerCase() === regionId.toLowerCase());
   return match ? match.routing : "americas";
+}
+
+export function getPlatformId(regionId: string): string {
+  const match = SUPPORTED_REGIONS.find((r) => r.id.toLowerCase() === regionId.toLowerCase());
+  return match ? match.platform : "NA1";
+}
+
+export async function fetchLeagueEntries(
+  puuid: string,
+  platformId: string,
+  apiKey: string
+): Promise<RankedEntry[]> {
+  if (isTauriEnvironment()) {
+    const { invoke } = await import("@tauri-apps/api/core");
+    return await invoke<RankedEntry[]>("get_league_entries", {
+      puuid,
+      platformRouting: platformId,
+      apiKey,
+    });
+  }
+
+  try {
+    const url = `https://${platformId.toLowerCase()}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}`;
+    const res = await fetch(url, { headers: { "X-Riot-Token": apiKey } });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchRiotAccount(
@@ -288,5 +319,97 @@ export function computeSummaryStats(matches: ParsedMatch[]): PlayerStatsSummary 
     avgCsPerMin: Number((totalCsPerMin / total).toFixed(1)),
     topChampions,
   };
+}
+
+const TIER_BASE_MMR: Record<string, number> = {
+  IRON: 400,
+  BRONZE: 800,
+  SILVER: 1200,
+  GOLD: 1600,
+  PLATINUM: 2000,
+  EMERALD: 2400,
+  DIAMOND: 2800,
+  MASTER: 3200,
+  GRANDMASTER: 3600,
+  CHALLENGER: 4000,
+};
+
+const DIVISION_OFFSET: Record<string, number> = {
+  IV: 0,
+  III: 100,
+  II: 200,
+  I: 300,
+};
+
+export function mmrToTierAndRank(mmr: number): { tier: string; rank: string; lp: number } {
+  if (mmr >= 4000) return { tier: "CHALLENGER", rank: "I", lp: mmr - 4000 };
+  if (mmr >= 3600) return { tier: "GRANDMASTER", rank: "I", lp: mmr - 3600 };
+  if (mmr >= 3200) return { tier: "MASTER", rank: "I", lp: mmr - 3200 };
+
+  const tiers = ["DIAMOND", "EMERALD", "PLATINUM", "GOLD", "SILVER", "BRONZE", "IRON"];
+  for (const t of tiers) {
+    const base = TIER_BASE_MMR[t];
+    if (mmr >= base) {
+      const diff = mmr - base;
+      const divIdx = Math.min(3, Math.floor(diff / 100));
+      const divs = ["IV", "III", "II", "I"];
+      const rank = divs[divIdx];
+      const lp = diff % 100;
+      return { tier: t, rank, lp };
+    }
+  }
+
+  return { tier: "IRON", rank: "IV", lp: Math.max(0, mmr) };
+}
+
+export function calculateMmrProgression(
+  matches: ParsedMatch[],
+  currentRank?: RankedEntry
+): MmrDataPoint[] {
+  if (matches.length === 0) return [];
+
+  // Sort matches chronologically (oldest to newest) to plot progress forward
+  const sorted = [...matches].sort((a, b) => a.gameCreation - b.gameCreation);
+
+  // Determine current starting MMR
+  let endMmr = 1640; // Default Gold IV baseline
+  if (currentRank && currentRank.tier) {
+    const base = TIER_BASE_MMR[currentRank.tier.toUpperCase()] || 1600;
+    const div = DIVISION_OFFSET[currentRank.rank] || 0;
+    endMmr = base + div + (currentRank.leaguePoints || 0);
+  }
+
+  // Work backwards from endMmr to find startMmr
+  let totalDelta = 0;
+  sorted.forEach((m) => {
+    const isWin = m.targetParticipant.win;
+    const delta = isWin ? 22 : -19;
+    totalDelta += delta;
+  });
+
+  let runningMmr = endMmr - totalDelta;
+
+  return sorted.map((m, idx) => {
+    const p = m.targetParticipant;
+    const delta = p.win ? 22 : -19;
+    runningMmr += delta;
+    const { tier, rank, lp } = mmrToTierAndRank(runningMmr);
+
+    return {
+      matchIndex: idx + 1,
+      matchId: m.matchId,
+      gameCreation: m.gameCreation,
+      championName: p.championName,
+      win: p.win,
+      kills: p.kills,
+      deaths: p.deaths,
+      assists: p.assists,
+      mmr: runningMmr,
+      delta,
+      tier,
+      rank,
+      lp,
+    };
+  });
 }
 

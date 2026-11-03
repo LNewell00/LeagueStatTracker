@@ -85,6 +85,31 @@ export interface ParsedMatch {
   teams?: MatchTeamStats[];
 }
 
+export interface RankedEntry {
+  queueType: string;
+  tier: string;
+  rank: string;
+  leaguePoints: number;
+  wins: number;
+  losses: number;
+}
+
+export interface MmrDataPoint {
+  matchIndex: number;
+  matchId: string;
+  gameCreation: number;
+  championName: string;
+  win: boolean;
+  kills: number;
+  deaths: number;
+  assists: number;
+  mmr: number;
+  delta: number;
+  tier: string;
+  rank: string;
+  lp: number;
+}
+
 export interface PlayerStatsSummary {
   totalGames: number;
   wins: number;

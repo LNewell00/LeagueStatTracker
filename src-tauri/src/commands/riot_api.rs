@@ -125,6 +125,38 @@ pub async fn get_match_detail(
     }
 }
 
+#[tauri::command]
+pub async fn get_league_entries(
+    puuid: String,
+    platform_routing: String,
+    api_key: String,
+) -> Result<serde_json::Value, String> {
+    let client = reqwest::Client::new();
+    let url = format!(
+        "https://{}.api.riotgames.com/lol/league/v4/entries/by-puuid/{}",
+        platform_routing.to_lowercase(),
+        puuid
+    );
+
+    let res = client
+        .get(&url)
+        .header("X-Riot-Token", &api_key)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch league entries: {}", e))?;
+
+    if !res.status().is_success() {
+        return Ok(serde_json::json!([]));
+    }
+
+    let entries: serde_json::Value = res
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse league entries: {}", e))?;
+
+    Ok(entries)
+}
+
 fn urlencoding(input: &str) -> String {
     let mut encoded = String::new();
     for byte in input.bytes() {
