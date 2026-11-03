@@ -62,8 +62,8 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Search Bar & Region Picker */}
-        <form onSubmit={handleSubmit} className="flex items-center gap-2 w-full md:w-auto flex-1 max-w-xl">
-          <div className="relative flex-1">
+        <form onSubmit={handleSubmit} className="flex flex-wrap md:flex-nowrap items-center gap-2.5 w-full md:w-auto flex-1 max-w-2xl xl:max-w-3xl">
+          <div className="relative flex-1 min-w-[220px] sm:min-w-[260px]">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
               <Search className="w-4 h-4" />
             </div>
@@ -72,14 +72,14 @@ export const Header: React.FC<HeaderProps> = ({
               value={inputRiotId}
               onChange={(e) => setInputRiotId(e.target.value)}
               placeholder="Search Riot ID (e.g. Faker#KR1)"
-              className="w-full pl-9 pr-4 py-2 text-sm bg-riot-surface border border-riot-border rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-riot-accent focus:ring-1 focus:ring-riot-accent transition-all"
+              className="w-full pl-9 pr-4 py-2 text-sm bg-riot-surface border border-riot-border rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-riot-accent focus:ring-1 focus:ring-riot-accent transition-all font-medium"
             />
           </div>
 
           <select
             value={selectedRegion}
             onChange={(e) => setSelectedRegion(e.target.value)}
-            className="bg-riot-surface border border-riot-border text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-riot-accent cursor-pointer"
+            className="shrink-0 bg-riot-surface border border-riot-border text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-riot-accent cursor-pointer"
           >
             {SUPPORTED_REGIONS.map((r) => (
               <option key={r.id} value={r.id}>
@@ -91,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
           <select
             value={selectedCount}
             onChange={(e) => setSelectedCount(Number(e.target.value))}
-            className="bg-riot-surface border border-riot-border text-slate-200 text-sm rounded-lg px-2.5 py-2 focus:outline-none focus:border-riot-accent cursor-pointer"
+            className="shrink-0 bg-riot-surface border border-riot-border text-slate-200 text-sm rounded-lg px-2.5 py-2 focus:outline-none focus:border-riot-accent cursor-pointer"
             title="Number of matches to pull"
           >
             <option value={10}>10 Games</option>
@@ -104,10 +104,10 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-riot-accent/10 border border-riot-accent/40 text-riot-accent font-medium text-sm hover:bg-riot-accent/20 active:scale-95 transition-all disabled:opacity-50"
+            className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg bg-riot-accent/15 border border-riot-accent/40 text-riot-accent font-semibold text-sm hover:bg-riot-accent hover:text-white active:scale-95 transition-all disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Fetch</span>
+            <span>Fetch</span>
           </button>
         </form>
 
