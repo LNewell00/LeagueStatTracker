@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Settings, RefreshCw, Radio, ShieldAlert, Sparkles } from "lucide-react";
+import { Search, Settings, RefreshCw, Radio, ShieldAlert } from "lucide-react";
 import { SUPPORTED_REGIONS } from "../types/riot";
 
 interface HeaderProps {
@@ -41,21 +41,26 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Brand / Title */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-riot-accent/20 via-riot-accent to-emerald-400 p-[1px] shadow-neon-cyan">
-            <div className="w-full h-full bg-riot-darkest rounded-[11px] flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-riot-accent" />
+          <div className="relative group">
+            <div className="w-11 h-11 rounded-2xl overflow-hidden border-2 border-riot-gold/70 shadow-neon-pink bg-riot-darkest">
+              <img
+                src="/app-icon.png"
+                alt="Seraphine & Yuumi Tracker"
+                className="w-full h-full object-cover scale-105 group-hover:scale-110 transition-transform duration-300"
+              />
             </div>
+            <span className="absolute -bottom-1 -right-1 text-[11px]" title="Musical Star">✨</span>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold tracking-wider text-slate-100 uppercase">
+              <h1 className="text-lg font-black tracking-wider text-slate-100 uppercase">
                 League<span className="text-riot-accent">Tracker</span>
               </h1>
-              <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-riot-accent/10 text-riot-accent border border-riot-accent/30">
-                v2 Native
+              <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-gradient-to-r from-pink-500/20 to-indigo-500/20 text-pink-300 border border-pink-500/30">
+                Seraphine & Yuumi
               </span>
             </div>
-            <p className="text-xs text-slate-400">Riot Match V5 & Live Client Engine</p>
+            <p className="text-xs text-slate-400">Cosmic Tracker • Match V5 & Live Engine</p>
           </div>
         </div>
 

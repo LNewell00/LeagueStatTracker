@@ -9,14 +9,17 @@ export default {
     extend: {
       colors: {
         riot: {
-          darkest: "#070a0e",
-          dark: "#0b1017",
-          surface: "#121926",
-          card: "#182234",
-          border: "#23334d",
-          accent: "#0ac8b9", // hextech blue/cyan
-          gold: "#c89b3c",   // prestige gold
-          goldLight: "#f0e6d2",
+          darkest: "#090714", // Deep cosmic night
+          dark: "#0f0b1f",    // Twilight indigo
+          surface: "#16102e", // Astral velvet surface
+          card: "#1d153b",    // Radiant card
+          border: "#2e2159",  // Starlight border
+          accent: "#ec4899",  // Seraphine hot pink
+          seraphine: "#f43f85",
+          yuumi: "#818cf8",   // Yuumi celestial violet/indigo
+          crystal: "#c084fc", // Musical crystal purple
+          gold: "#fbbf24",    // Yuumi crown gold
+          goldLight: "#fef08a",
         },
         neon: {
           win: "#10b981",    // emerald 500
@@ -25,14 +28,16 @@ export default {
           loss: "#f43f5e",   // rose 500
           lossGlow: "#e11d48",
           lossBadge: "#4c0519",
-          active: "#38bdf8",  // sky 400
+          active: "#ec4899", // seraphine pink active
         }
       },
       boxShadow: {
         "neon-win": "0 0 15px -3px rgba(16, 185, 129, 0.45)",
         "neon-loss": "0 0 15px -3px rgba(244, 63, 94, 0.45)",
-        "neon-cyan": "0 0 20px -3px rgba(10, 200, 185, 0.45)",
-        "neon-gold": "0 0 15px -3px rgba(200, 155, 60, 0.4)",
+        "neon-cyan": "0 0 20px -3px rgba(236, 72, 153, 0.45)",
+        "neon-pink": "0 0 20px -3px rgba(236, 72, 153, 0.5)",
+        "neon-yuumi": "0 0 20px -3px rgba(129, 140, 248, 0.5)",
+        "neon-gold": "0 0 15px -3px rgba(251, 191, 36, 0.45)",
       },
       fontFamily: {
         sans: [

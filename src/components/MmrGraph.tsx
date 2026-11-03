@@ -139,16 +139,23 @@ export const MmrGraph: React.FC<MmrGraphProps> = ({ dataPoints, currentRank }) =
           className="w-full h-48 md:h-56 overflow-visible select-none"
         >
           <defs>
+            {/* Seraphine & Yuumi line gradient */}
+            <linearGradient id="mmrLineGradient" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#ec4899" />
+              <stop offset="50%" stopColor="#c084fc" />
+              <stop offset="100%" stopColor="#818cf8" />
+            </linearGradient>
+
             {/* Area gradient */}
             <linearGradient id="mmrAreaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#0ac8b9" stopOpacity="0.25" />
-              <stop offset="85%" stopColor="#0ac8b9" stopOpacity="0.02" />
-              <stop offset="100%" stopColor="#0ac8b9" stopOpacity="0" />
+              <stop offset="0%" stopColor="#ec4899" stopOpacity="0.25" />
+              <stop offset="60%" stopColor="#818cf8" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="#090714" stopOpacity="0" />
             </linearGradient>
 
             {/* Line glow filter */}
             <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#0ac8b9" floodOpacity="0.6" />
+              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#ec4899" floodOpacity="0.5" />
             </filter>
           </defs>
 
@@ -185,8 +192,8 @@ export const MmrGraph: React.FC<MmrGraphProps> = ({ dataPoints, currentRank }) =
           {/* Main Trend Line */}
           <polyline
             fill="none"
-            stroke="#0ac8b9"
-            strokeWidth="3"
+            stroke="url(#mmrLineGradient)"
+            strokeWidth="3.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             filter="url(#neonGlow)"
@@ -332,3 +339,4 @@ export const MmrGraph: React.FC<MmrGraphProps> = ({ dataPoints, currentRank }) =
     </div>
   );
 };
+

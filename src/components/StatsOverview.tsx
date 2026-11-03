@@ -13,8 +13,9 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ summary, summonerN
 
   return (
     <div className="bg-gradient-to-r from-riot-card via-riot-surface to-riot-card border border-riot-border rounded-2xl p-5 shadow-lg relative overflow-hidden">
-      {/* Decorative background glow */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-riot-accent/5 rounded-full blur-3xl pointer-events-none" />
+      {/* Decorative Seraphine & Yuumi background glow */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-10 -left-10 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
         {/* Left: Player ID & Win Rate Ring */}

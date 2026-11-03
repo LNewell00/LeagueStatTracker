@@ -71,9 +71,9 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
   const items = playerInGame?.items || [];
 
   return (
-    <div className="bg-gradient-to-r from-riot-card via-riot-surface to-riot-card border border-riot-accent/40 rounded-2xl p-5 shadow-neon-cyan relative overflow-hidden transition-all">
+    <div className="bg-gradient-to-r from-riot-card via-riot-surface to-riot-card border border-pink-500/40 rounded-2xl p-5 shadow-neon-pink relative overflow-hidden transition-all">
       {/* Background glow banner */}
-      <div className="absolute top-0 right-0 w-80 h-full bg-gradient-to-l from-riot-accent/10 to-transparent pointer-events-none" />
+      <div className="absolute top-0 right-0 w-80 h-full bg-gradient-to-l from-pink-500/10 via-indigo-500/5 to-transparent pointer-events-none" />
 
       {/* Header bar */}
       <div className="flex items-center justify-between mb-4 border-b border-riot-border/60 pb-3">
