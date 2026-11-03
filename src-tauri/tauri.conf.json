@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "League of Legends Stat Tracker",
         "width": 1280,
         "height": 860,
