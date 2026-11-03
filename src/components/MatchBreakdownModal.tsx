@@ -32,6 +32,7 @@ import {
   RefreshCw,
   Loader2,
   Info,
+  ShieldAlert,
 } from "lucide-react";
 
 interface MatchBreakdownModalProps {
@@ -161,7 +162,11 @@ export const MatchBreakdownModal: React.FC<MatchBreakdownModalProps> = ({
   const blueTotalKills = blueTeam.reduce((acc, p) => acc + p.kills, 0);
   const redTotalKills = redTeam.reduce((acc, p) => acc + p.kills, 0);
 
-  // Damage distribution percentages
+  const isAllyBlue = target.teamId === 100;
+  const allyTeam = isAllyBlue ? blueTeam : redTeam;
+  const enemyTeam = isAllyBlue ? redTeam : blueTeam;
+
+  // Personal Player Damage Breakdown
   const physicalDmg = target.physicalDamageDealtToChampions || 0;
   const magicDmg = target.magicDamageDealtToChampions || 0;
   const trueDmg = target.trueDamageDealtToChampions || 0;
@@ -172,7 +177,27 @@ export const MatchBreakdownModal: React.FC<MatchBreakdownModalProps> = ({
 
   const physicalPct = isLegacyDamageMissing ? 0 : Math.round((physicalDmg / totalDmg) * 100);
   const magicPct = isLegacyDamageMissing ? 0 : Math.round((magicDmg / totalDmg) * 100);
-  const truePct = isLegacyDamageMissing ? 0 : Math.round((trueDmg / totalDmg) * 100);
+  const truePct = isLegacyDamageMissing ? 0 : Math.max(0, 100 - physicalPct - magicPct);
+
+  // Ally Team Damage Breakdown
+  const allyPhysicalDmg = allyTeam.reduce((acc, p) => acc + (p.physicalDamageDealtToChampions || 0), 0);
+  const allyMagicDmg = allyTeam.reduce((acc, p) => acc + (p.magicDamageDealtToChampions || 0), 0);
+  const allyTrueDmg = allyTeam.reduce((acc, p) => acc + (p.trueDamageDealtToChampions || 0), 0);
+  const allyTotalCombatDmg = Math.max(1, allyPhysicalDmg + allyMagicDmg + allyTrueDmg);
+
+  const allyPhysicalPct = isLegacyDamageMissing ? 0 : Math.round((allyPhysicalDmg / allyTotalCombatDmg) * 100);
+  const allyMagicPct = isLegacyDamageMissing ? 0 : Math.round((allyMagicDmg / allyTotalCombatDmg) * 100);
+  const allyTruePct = isLegacyDamageMissing ? 0 : Math.max(0, 100 - allyPhysicalPct - allyMagicPct);
+
+  // Enemy Team Damage Breakdown
+  const enemyPhysicalDmg = enemyTeam.reduce((acc, p) => acc + (p.physicalDamageDealtToChampions || 0), 0);
+  const enemyMagicDmg = enemyTeam.reduce((acc, p) => acc + (p.magicDamageDealtToChampions || 0), 0);
+  const enemyTrueDmg = enemyTeam.reduce((acc, p) => acc + (p.trueDamageDealtToChampions || 0), 0);
+  const enemyTotalCombatDmg = Math.max(1, enemyPhysicalDmg + enemyMagicDmg + enemyTrueDmg);
+
+  const enemyPhysicalPct = isLegacyDamageMissing ? 0 : Math.round((enemyPhysicalDmg / enemyTotalCombatDmg) * 100);
+  const enemyMagicPct = isLegacyDamageMissing ? 0 : Math.round((enemyMagicDmg / enemyTotalCombatDmg) * 100);
+  const enemyTruePct = isLegacyDamageMissing ? 0 : Math.max(0, 100 - enemyPhysicalPct - enemyMagicPct);
 
   const renderTeamTable = (
     team: MatchParticipant[],
@@ -625,17 +650,41 @@ export const MatchBreakdownModal: React.FC<MatchBreakdownModalProps> = ({
                 </div>
               </div>
 
-              {/* Damage Composition Split */}
-              <div className="bg-riot-surface/60 border border-riot-border rounded-2xl p-4 space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                    <Swords className="w-4 h-4 text-riot-accent" />
-                    Damage Type Breakdown
-                  </span>
-                  <span className="font-mono text-slate-300">
-                    Total: <strong className="text-slate-100">{totalDmg.toLocaleString()}</strong>{" "}
-                    to champions
-                  </span>
+              {/* Damage Composition Split: Team vs Team & Personal AP / AD / True Breakdown */}
+              <div className="bg-riot-surface/70 border border-riot-border rounded-2xl p-4 sm:p-5 space-y-4 shadow-lg">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-riot-border/50 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-riot-accent/15 border border-riot-accent/30 flex items-center justify-center">
+                      <Swords className="w-4 h-4 text-riot-accent" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-100 flex items-center gap-2">
+                        <span>Team & Personal Damage Breakdown</span>
+                        <span className="text-[10px] font-mono text-riot-accent font-normal bg-riot-accent/10 px-1.5 py-0.5 rounded border border-riot-accent/20">
+                          AD vs AP vs True
+                        </span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Compare your team's total damage profile against the opposing team to analyze itemization
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Legend Dots */}
+                  <div className="flex items-center gap-3.5 text-xs font-mono">
+                    <span className="flex items-center gap-1.5 text-orange-400 font-semibold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-orange-500 shadow-[0_0_6px_#f97316]" />
+                      Physical (AD)
+                    </span>
+                    <span className="flex items-center gap-1.5 text-cyan-400 font-semibold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
+                      Magic (AP)
+                    </span>
+                    <span className="flex items-center gap-1.5 text-slate-200 font-semibold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-slate-100 shadow-[0_0_6px_#ffffff]" />
+                      True Damage
+                    </span>
+                  </div>
                 </div>
 
                 {isLegacyDamageMissing ? (
@@ -662,41 +711,212 @@ export const MatchBreakdownModal: React.FC<MatchBreakdownModalProps> = ({
                     )}
                   </div>
                 ) : (
-                  <>
-                    {/* Tri-color progress bar */}
-                    <div className="w-full h-3 bg-riot-darkest rounded-full overflow-hidden flex shadow-inner">
-                      <div
-                        className="h-full bg-orange-500 transition-all"
-                        style={{ width: `${physicalPct}%` }}
-                        title={`Physical Damage: ${physicalDmg.toLocaleString()} (${physicalPct}%)`}
-                      />
-                      <div
-                        className="h-full bg-cyan-400 transition-all"
-                        style={{ width: `${magicPct}%` }}
-                        title={`Magic Damage: ${magicDmg.toLocaleString()} (${magicPct}%)`}
-                      />
-                      <div
-                        className="h-full bg-white transition-all"
-                        style={{ width: `${truePct}%` }}
-                        title={`True Damage: ${trueDmg.toLocaleString()} (${truePct}%)`}
-                      />
+                  <div className="space-y-3.5">
+                    {/* SECTION 1: Your Champion Breakdown */}
+                    <div className="bg-riot-darkest/70 border border-riot-accent/35 rounded-xl p-3.5 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-md overflow-hidden border border-riot-accent/50 shrink-0">
+                            <img
+                              src={getChampionIconUrl(target.championName)}
+                              alt={target.championName}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <span className="font-bold text-slate-100">
+                            You ({target.championName})
+                          </span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-riot-accent/20 text-riot-accent border border-riot-accent/30 font-semibold uppercase">
+                            Your Champion
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2.5 font-mono text-xs">
+                          <span className="text-slate-300">
+                            Total: <strong className="text-slate-100">{totalDmg.toLocaleString()}</strong>
+                          </span>
+                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-riot-surface border border-riot-border text-slate-200 font-bold">
+                            {physicalPct}% AD • {magicPct}% AP • {truePct}% True
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 3-Color Segmented Bar */}
+                      <div className="w-full h-2.5 bg-riot-darkest rounded-full overflow-hidden flex shadow-inner">
+                        <div
+                          className="h-full bg-orange-500 transition-all hover:brightness-110"
+                          style={{ width: `${physicalPct}%` }}
+                          title={`Physical / AD: ${physicalDmg.toLocaleString()} (${physicalPct}%)`}
+                        />
+                        <div
+                          className="h-full bg-cyan-400 transition-all hover:brightness-110"
+                          style={{ width: `${magicPct}%` }}
+                          title={`Magic / AP: ${magicDmg.toLocaleString()} (${magicPct}%)`}
+                        />
+                        <div
+                          className="h-full bg-slate-100 transition-all hover:brightness-110"
+                          style={{ width: `${truePct}%` }}
+                          title={`True: ${trueDmg.toLocaleString()} (${truePct}%)`}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-0.5">
+                        <span className="text-orange-400">Physical: {physicalDmg.toLocaleString()} ({physicalPct}%)</span>
+                        <span className="text-cyan-400">Magic: {magicDmg.toLocaleString()} ({magicPct}%)</span>
+                        <span className="text-slate-300">True: {trueDmg.toLocaleString()} ({truePct}%)</span>
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-orange-500" />
-                        Physical: {physicalDmg.toLocaleString()} ({physicalPct}%)
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                        Magic: {magicDmg.toLocaleString()} ({magicPct}%)
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-white" />
-                        True: {trueDmg.toLocaleString()} ({truePct}%)
-                      </span>
+                    {/* SECTION 2: Your Team (Allies) Total Composition */}
+                    <div className="bg-riot-darkest/50 border border-riot-border/70 rounded-xl p-3.5 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${
+                              isAllyBlue
+                                ? "bg-cyan-400 shadow-[0_0_8px_#22d3ee]"
+                                : "bg-rose-500 shadow-[0_0_8px_#f43f5e]"
+                            }`}
+                          />
+                          <span className="font-bold text-slate-100">
+                            Your Team ({isAllyBlue ? "Blue" : "Red"} Team Total)
+                          </span>
+                          <span
+                            className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                              allyPhysicalPct >= 65
+                                ? "bg-orange-500/20 text-orange-300 border border-orange-500/30"
+                                : allyMagicPct >= 65
+                                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                                : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                            }`}
+                          >
+                            {allyPhysicalPct >= 65
+                              ? "Heavy AD Comp"
+                              : allyMagicPct >= 65
+                              ? "Heavy AP Comp"
+                              : "Balanced Hybrid Comp"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2.5 font-mono text-xs">
+                          <span className="text-slate-300">
+                            Team Total: <strong className="text-slate-100">{allyTotalCombatDmg.toLocaleString()}</strong>
+                          </span>
+                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-riot-surface border border-riot-border text-slate-200 font-bold">
+                            {allyPhysicalPct}% AD • {allyMagicPct}% AP • {allyTruePct}% True
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 3-Color Segmented Bar */}
+                      <div className="w-full h-2.5 bg-riot-darkest rounded-full overflow-hidden flex shadow-inner">
+                        <div
+                          className="h-full bg-orange-500 transition-all hover:brightness-110"
+                          style={{ width: `${allyPhysicalPct}%` }}
+                          title={`Ally Physical / AD: ${allyPhysicalDmg.toLocaleString()} (${allyPhysicalPct}%)`}
+                        />
+                        <div
+                          className="h-full bg-cyan-400 transition-all hover:brightness-110"
+                          style={{ width: `${allyMagicPct}%` }}
+                          title={`Ally Magic / AP: ${allyMagicDmg.toLocaleString()} (${allyMagicPct}%)`}
+                        />
+                        <div
+                          className="h-full bg-slate-100 transition-all hover:brightness-110"
+                          style={{ width: `${allyTruePct}%` }}
+                          title={`Ally True: ${allyTrueDmg.toLocaleString()} (${allyTruePct}%)`}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-0.5">
+                        <span className="text-orange-400">Team AD: {allyPhysicalDmg.toLocaleString()} ({allyPhysicalPct}%)</span>
+                        <span className="text-cyan-400">Team AP: {allyMagicDmg.toLocaleString()} ({allyMagicPct}%)</span>
+                        <span className="text-slate-300">Team True: {allyTrueDmg.toLocaleString()} ({allyTruePct}%)</span>
+                      </div>
                     </div>
-                  </>
+
+                    {/* SECTION 3: Enemy Team (Opponents) Total Composition */}
+                    <div className="bg-riot-darkest/50 border border-riot-border/70 rounded-xl p-3.5 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full ${
+                              !isAllyBlue
+                                ? "bg-cyan-400 shadow-[0_0_8px_#22d3ee]"
+                                : "bg-rose-500 shadow-[0_0_8px_#f43f5e]"
+                            }`}
+                          />
+                          <span className="font-bold text-slate-100">
+                            Enemy Team ({!isAllyBlue ? "Blue" : "Red"} Team Total)
+                          </span>
+                          <span
+                            className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                              enemyPhysicalPct >= 65
+                                ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                                : enemyMagicPct >= 65
+                                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                                : "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+                            }`}
+                          >
+                            {enemyPhysicalPct >= 65
+                              ? "Heavy AD Threat"
+                              : enemyMagicPct >= 65
+                              ? "Heavy AP Threat"
+                              : "Mixed Threat"}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2.5 font-mono text-xs">
+                          <span className="text-slate-300">
+                            Enemy Total: <strong className="text-slate-100">{enemyTotalCombatDmg.toLocaleString()}</strong>
+                          </span>
+                          <span className="text-[11px] px-2 py-0.5 rounded-md bg-riot-surface border border-riot-border text-slate-200 font-bold">
+                            {enemyPhysicalPct}% AD • {enemyMagicPct}% AP • {enemyTruePct}% True
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 3-Color Segmented Bar */}
+                      <div className="w-full h-2.5 bg-riot-darkest rounded-full overflow-hidden flex shadow-inner">
+                        <div
+                          className="h-full bg-orange-500 transition-all hover:brightness-110"
+                          style={{ width: `${enemyPhysicalPct}%` }}
+                          title={`Enemy Physical / AD: ${enemyPhysicalDmg.toLocaleString()} (${enemyPhysicalPct}%)`}
+                        />
+                        <div
+                          className="h-full bg-cyan-400 transition-all hover:brightness-110"
+                          style={{ width: `${enemyMagicPct}%` }}
+                          title={`Enemy Magic / AP: ${enemyMagicDmg.toLocaleString()} (${enemyMagicPct}%)`}
+                        />
+                        <div
+                          className="h-full bg-slate-100 transition-all hover:brightness-110"
+                          style={{ width: `${enemyTruePct}%` }}
+                          title={`Enemy True: ${enemyTrueDmg.toLocaleString()} (${enemyTruePct}%)`}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-0.5">
+                        <span className="text-orange-400">Enemy AD: {enemyPhysicalDmg.toLocaleString()} ({enemyPhysicalPct}%)</span>
+                        <span className="text-cyan-400">Enemy AP: {enemyMagicDmg.toLocaleString()} ({enemyMagicPct}%)</span>
+                        <span className="text-slate-300">Enemy True: {enemyTrueDmg.toLocaleString()} ({enemyTruePct}%)</span>
+                      </div>
+                    </div>
+
+                    {/* SECTION 4: Tactical Defensive / Offensive Itemization Strategy Tip */}
+                    <div className="p-3.5 rounded-xl bg-riot-darkest/70 border border-riot-border/60 flex items-start gap-2.5 text-xs">
+                      <ShieldAlert className="w-4 h-4 text-riot-gold shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="font-bold text-slate-200">Comparative Itemization Analysis:</span>
+                        <p className="text-slate-400 leading-relaxed text-[11px]">
+                          {enemyPhysicalPct >= 65
+                            ? `The opposing team leaned heavily into Physical damage (${enemyPhysicalPct}% AD). High Armor items (Plated Steelcaps, Frozen Heart, Thornmail, Randuin's Omen) provided massive damage reduction.`
+                            : enemyMagicPct >= 60
+                            ? `The opposing team leaned heavily into Magic damage (${enemyMagicPct}% AP). High Magic Resist items (Kaenic Rookern, Force of Nature, Maw of Malmortius, Mercury's Treads) provided maximum damage reduction.`
+                            : enemyTruePct >= 15
+                            ? `The opposing team dealt notable True Damage (${enemyTruePct}%). Stacking Raw Maximum Health (Warmog's Armor, Heartsteel) was best because True Damage ignores resistances.`
+                            : `Both teams brought a well-balanced AP and AD damage split. Standard mixed defensive itemization was optimal.`}
+                          {allyPhysicalPct >= 75 && " Your team was heavily AD-skewed (75%+), giving enemies reason to stack Armor; % Armor Penetration (Lord Dominik's Regards / Serylda's Grudge) was crucial."}
+                          {allyMagicPct >= 75 && " Your team was heavily AP-skewed (75%+), giving enemies reason to stack Magic Resist; % Magic Penetration (Void Staff / Cryptbloom) was essential."}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 
