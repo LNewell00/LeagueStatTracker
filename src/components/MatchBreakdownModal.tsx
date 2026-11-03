@@ -344,7 +344,7 @@ export const MatchBreakdownModal: React.FC<MatchBreakdownModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/85 backdrop-blur-md animate-in fade-in">
-      <div className="bg-riot-card border border-riot-border w-full max-w-5xl max-h-[94vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden relative">
+      <div className="bg-riot-card border border-riot-border w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1450px] max-h-[94vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden relative">
         {/* Top Header Banner */}
         <div
           className={`px-6 py-4 flex flex-wrap items-center justify-between gap-3 border-b ${

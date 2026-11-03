@@ -179,7 +179,7 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
         </div>
 
         {/* Section 5: Stats (Damage & Vision) */}
-        <div className="hidden 2xl:flex items-center gap-4 text-xs text-slate-400 border-l border-riot-border/50 pl-4">
+        <div className="hidden lg:flex items-center gap-4 text-xs text-slate-400 border-l border-riot-border/50 pl-4">
           <div className="flex items-center gap-1" title="Damage to champions">
             <Flame className="w-3.5 h-3.5 text-rose-400" />
             <span>{p.totalDamageDealtToChampions.toLocaleString()}</span>

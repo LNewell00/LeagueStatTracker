@@ -68,7 +68,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ summary, summonerN
         </div>
 
         {/* Center: Key Stats Cards */}
-        <div className="grid grid-cols-3 gap-3 w-full lg:w-auto flex-1 max-w-xl">
+        <div className="grid grid-cols-3 gap-3 w-full lg:w-auto flex-1 max-w-2xl xl:max-w-3xl">
           {/* Card 1: Total Games */}
           <div className="bg-riot-darkest/60 border border-riot-border/70 rounded-xl p-3 flex flex-col items-center justify-center">
             <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-1">

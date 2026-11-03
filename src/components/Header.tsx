@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="border-b border-riot-border/70 bg-riot-dark/80 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5 transition-all">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="max-w-[1720px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Brand / Title */}
         <div className="flex items-center gap-3">
           <div className="relative group">
