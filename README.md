@@ -138,3 +138,9 @@ Open `http://localhost:1420` in your browser. (The app will automatically use si
    - Polled every 3 seconds while League of Legends is running.
    - Handled inside Rust via `reqwest::Client::builder().danger_accept_invalid_certs(true)` to bypass the self-signed certificate used by the League game client.
 
+---
+
+## ⚖️ Legal Disclaimer
+
+League Stat Tracker is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+

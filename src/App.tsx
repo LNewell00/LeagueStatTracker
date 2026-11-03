@@ -599,6 +599,18 @@ export const App: React.FC = () => {
         onSavePreferences={(newPrefs) => setPreferences(newPrefs)}
         onCacheCleared={handleCacheCleared}
       />
+
+      {/* App Footer & Legal Disclaimer (Visible to Players) */}
+      <footer className="border-t border-riot-border/50 py-6 px-4 text-center text-xs text-slate-500 mt-auto">
+        <div className="max-w-4xl mx-auto space-y-2">
+          <p className="font-semibold text-slate-400">
+            League Stat Tracker v0.1.0 • Seraphine & Yuumi Cosmic Edition
+          </p>
+          <p className="text-[11px] leading-relaxed text-slate-500">
+            League Stat Tracker is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };

@@ -274,6 +274,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
           </div>
 
+          {/* Legal Boilerplate Notice */}
+          <div className="p-3 rounded-xl bg-riot-darkest/60 border border-riot-border/50 text-[11px] text-slate-500 leading-relaxed">
+            <span className="font-semibold text-slate-400 block mb-0.5">Legal Disclaimer:</span>
+            League Stat Tracker is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
+          </div>
+
           {/* Action Buttons */}
           <div className="pt-3 flex items-center justify-end gap-3">
             <button
