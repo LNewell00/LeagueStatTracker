@@ -2,7 +2,6 @@ import React from "react";
 import { LivePollerState } from "../types/live";
 import { Activity, Clock, Zap, Shield, Swords, Coins, PlayCircle, StopCircle } from "lucide-react";
 import { getChampionIconUrl, getItemIconUrl } from "../services/ddragon";
-import { liveClientService } from "../services/liveClient";
 
 interface LiveGameCardProps {
   liveState: LivePollerState;
