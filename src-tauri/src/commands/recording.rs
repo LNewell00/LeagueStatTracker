@@ -159,3 +159,4 @@ pub fn scan_rofl_replays() -> Result<Vec<RoflReplayMeta>, String> {
     results.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
     Ok(results)
 }
+
