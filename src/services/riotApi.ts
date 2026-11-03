@@ -8,6 +8,13 @@ import {
   RankedEntry,
   MmrDataPoint,
 } from "../types/riot";
+import {
+  ParsedTimeline,
+  SkillSlot,
+  SkillLevelUpEvent,
+  KillMapEvent,
+  MinuteLeadFrame,
+} from "../types/timeline";
 import { isTauriEnvironment } from "./storage";
 
 export function getRegionalRouting(regionId: string): RegionalRouting {
@@ -432,5 +439,246 @@ export function calculateMmrProgression(
       lp,
     };
   });
+}
+
+// In-memory cache for timeline responses to prevent duplicate calls
+export const timelineMemoryCache: Record<string, ParsedTimeline> = {};
+
+export async function fetchMatchTimeline(
+  matchId: string,
+  regionalRouting: string,
+  apiKey: string
+): Promise<any> {
+  if (isTauriEnvironment()) {
+    const { invoke } = await import("@tauri-apps/api/core");
+    return await invoke<any>("get_match_timeline", {
+      matchId,
+      regionalRouting,
+      apiKey,
+    });
+  }
+
+  const url = `https://${regionalRouting}.api.riotgames.com/lol/match/v5/matches/${matchId}/timeline`;
+  let attempts = 0;
+  while (attempts < 3) {
+    attempts++;
+    const res = await fetch(url, {
+      headers: { "X-Riot-Token": apiKey },
+    });
+
+    if (res.status === 429) {
+      const retryAfter = Number(res.headers.get("Retry-After") || 2);
+      await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+      continue;
+    }
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch timeline for ${matchId}: HTTP ${res.status}`);
+    }
+
+    return await res.json();
+  }
+}
+
+export function parseMatchTimeline(raw: any, match: ParsedMatch): ParsedTimeline | null {
+  try {
+    const info = raw.info;
+    const metadata = raw.metadata;
+    if (!info || !info.frames) return null;
+
+    const targetPuuid = match.targetParticipant.puuid;
+
+    // Resolve target participant ID (1..10)
+    let targetParticipantId = 1;
+    if (info.participants && Array.isArray(info.participants)) {
+      const found = info.participants.find((p: any) => p.puuid === targetPuuid);
+      if (found) targetParticipantId = found.participantId;
+    } else if (metadata?.participants && Array.isArray(metadata.participants)) {
+      const idx = metadata.participants.indexOf(targetPuuid);
+      if (idx !== -1) targetParticipantId = idx + 1;
+    }
+
+    // Map participant IDs (1..10) to champion names, teams, and summoners
+    const participantMap: Record<
+      number,
+      { puuid: string; championName: string; summonerName: string; teamId: number }
+    > = {};
+
+    match.allParticipants.forEach((p, idx) => {
+      // Typically participantId is 1-indexed in Riot match v5
+      const pid = idx + 1;
+      participantMap[pid] = {
+        puuid: p.puuid,
+        championName: p.championName,
+        summonerName: p.summonerName || p.riotIdGameName || "Summoner",
+        teamId: p.teamId,
+      };
+    });
+
+    // If info.participants provided puuids, link precisely by puuid
+    if (info.participants && Array.isArray(info.participants)) {
+      info.participants.forEach((ip: any) => {
+        const matched = match.allParticipants.find((p) => p.puuid === ip.puuid);
+        if (matched) {
+          participantMap[ip.participantId] = {
+            puuid: matched.puuid,
+            championName: matched.championName,
+            summonerName: matched.summonerName || matched.riotIdGameName || "Summoner",
+            teamId: matched.teamId,
+          };
+        }
+      });
+    }
+
+    const targetTeamId = match.targetParticipant.teamId;
+
+    const minuteFrames: MinuteLeadFrame[] = [];
+    const skillLevelUps: SkillLevelUpEvent[] = [];
+    const kills: KillMapEvent[] = [];
+
+    let currentSkillLevel = 0;
+    const skillSlotNames: Record<number, SkillSlot> = {
+      1: "Q",
+      2: "W",
+      3: "E",
+      4: "R",
+    };
+
+    let maxBlueLead = { lead: 0, minute: 0 };
+    let maxRedLead = { lead: 0, minute: 0 };
+    let goldAt15m = 0;
+
+    info.frames.forEach((frame: any, frameIdx: number) => {
+      const minute = frameIdx;
+      const pFrames = frame.participantFrames || {};
+
+      let blueGold = 0;
+      let redGold = 0;
+      let blueXp = 0;
+      let redXp = 0;
+      let targetGold = 0;
+      let targetLevel = 1;
+      let targetCs = 0;
+
+      for (let pid = 1; pid <= 10; pid++) {
+        const pf = pFrames[String(pid)];
+        if (!pf) continue;
+
+        const infoObj = participantMap[pid];
+        const isBlue = infoObj ? infoObj.teamId === 100 : pid <= 5;
+
+        if (isBlue) {
+          blueGold += pf.totalGold || 0;
+          blueXp += pf.xp || 0;
+        } else {
+          redGold += pf.totalGold || 0;
+          redXp += pf.xp || 0;
+        }
+
+        if (pid === targetParticipantId) {
+          targetGold = pf.totalGold || 0;
+          targetLevel = pf.level || 1;
+          targetCs = (pf.minionsKilled || 0) + (pf.jungleMinionsKilled || 0);
+        }
+      }
+
+      const goldDiff = blueGold - redGold;
+      const xpDiff = blueXp - redXp;
+
+      if (goldDiff > maxBlueLead.lead) {
+        maxBlueLead = { lead: goldDiff, minute };
+      }
+      if (-goldDiff > maxRedLead.lead) {
+        maxRedLead = { lead: -goldDiff, minute };
+      }
+      if (minute === 15) {
+        goldAt15m = goldDiff;
+      }
+
+      minuteFrames.push({
+        minute,
+        blueGold,
+        redGold,
+        goldDiff,
+        blueXp,
+        redXp,
+        xpDiff,
+        targetGold,
+        targetLevel,
+        targetCs,
+      });
+
+      // Process Events
+      const events = frame.events || [];
+      events.forEach((evt: any) => {
+        // Skill Level Up
+        if (evt.type === "SKILL_LEVEL_UP" && evt.participantId === targetParticipantId) {
+          const slot = evt.skillSlot;
+          if (slot in skillSlotNames) {
+            currentSkillLevel++;
+            skillLevelUps.push({
+              level: currentSkillLevel,
+              skillSlot: slot,
+              skillKey: skillSlotNames[slot],
+              timestamp: evt.timestamp,
+            });
+          }
+        }
+
+        // Champion Kill
+        if (evt.type === "CHAMPION_KILL") {
+          const killerId = evt.killerId || 0;
+          const victimId = evt.victimId || 0;
+          const assists: number[] = evt.assistingParticipantIds || [];
+          const pos = evt.position || { x: 7500, y: 7500 };
+
+          const killerInfo = participantMap[killerId];
+          const victimInfo = participantMap[victimId];
+
+          const isTargetKill = killerId === targetParticipantId;
+          const isTargetDeath = victimId === targetParticipantId;
+          const isTargetAssist = assists.includes(targetParticipantId);
+
+          const timeSec = Math.floor((evt.timestamp || 0) / 1000);
+          const evMin = Math.floor(timeSec / 60);
+          const evSec = timeSec % 60;
+
+          kills.push({
+            killerId,
+            victimId,
+            assistingParticipantIds: assists,
+            killerChampion: killerInfo?.championName || (killerId === 0 ? "Minion/Turret" : "Champion"),
+            victimChampion: victimInfo?.championName || "Champion",
+            killerName: killerInfo?.summonerName || "Unknown",
+            victimName: victimInfo?.summonerName || "Unknown",
+            killerTeamId: killerInfo?.teamId || 100,
+            victimTeamId: victimInfo?.teamId || 200,
+            position: pos,
+            timestamp: evt.timestamp || 0,
+            minute: evMin,
+            second: evSec,
+            isTargetKill,
+            isTargetDeath,
+            isTargetAssist,
+          });
+        }
+      });
+    });
+
+    return {
+      matchId: metadata?.matchId || match.matchId,
+      targetParticipantId,
+      targetTeamId,
+      maxBlueGoldLead: maxBlueLead,
+      maxRedGoldLead: maxRedLead,
+      goldAt15m,
+      minuteFrames,
+      skillLevelUps,
+      kills,
+    };
+  } catch (err) {
+    console.error("Error parsing match timeline:", err);
+    return null;
+  }
 }
 

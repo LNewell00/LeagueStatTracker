@@ -1,7 +1,9 @@
 mod commands;
 
 use commands::live_client::poll_live_client_data;
-use commands::riot_api::{get_league_entries, get_match_detail, get_match_ids, get_riot_account};
+use commands::riot_api::{
+    get_league_entries, get_match_detail, get_match_ids, get_match_timeline, get_riot_account,
+};
 use commands::storage::{clear_match_cache, load_match_cache, save_match_cache};
 use tauri::Manager;
 
@@ -26,6 +28,7 @@ pub fn run() {
             get_riot_account,
             get_match_ids,
             get_match_detail,
+            get_match_timeline,
             get_league_entries,
             poll_live_client_data,
             save_match_cache,

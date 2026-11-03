@@ -550,6 +550,18 @@ export const App: React.FC = () => {
         <MatchBreakdownModal
           match={selectedBreakdownMatch}
           onClose={() => setSelectedBreakdownMatch(null)}
+          apiKey={preferences.apiKey}
+          regionalRouting={getRegionalRouting(preferences.region)}
+          onMatchUpdated={(updatedMatch) => {
+            setMatches((prev) => {
+              const updatedList = prev.map((m) =>
+                m.matchId === updatedMatch.matchId ? updatedMatch : m
+              );
+              saveMatchesToCache(updatedList);
+              return updatedList;
+            });
+            setSelectedBreakdownMatch(updatedMatch);
+          }}
         />
       )}
 

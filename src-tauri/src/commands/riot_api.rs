@@ -128,6 +128,53 @@ pub async fn get_match_detail(
 }
 
 #[tauri::command]
+pub async fn get_match_timeline(
+    match_id: String,
+    regional_routing: String,
+    api_key: String,
+) -> Result<serde_json::Value, String> {
+    let client = reqwest::Client::new();
+    let url = format!(
+        "https://{}.api.riotgames.com/lol/match/v5/matches/{}/timeline",
+        regional_routing, match_id
+    );
+
+    let mut attempts = 0;
+    loop {
+        attempts += 1;
+        let res = client
+            .get(&url)
+            .header("X-Riot-Token", &api_key)
+            .send()
+            .await
+            .map_err(|e| format!("Failed to fetch match timeline for {}: {}", match_id, e))?;
+
+        if res.status() == reqwest::StatusCode::TOO_MANY_REQUESTS && attempts <= 3 {
+            let wait_secs = res
+                .headers()
+                .get("Retry-After")
+                .and_then(|h| h.to_str().ok())
+                .and_then(|s| s.parse::<u64>().ok())
+                .unwrap_or(2);
+
+            tokio::time::sleep(tokio::time::Duration::from_secs(wait_secs)).await;
+            continue;
+        }
+
+        if !res.status().is_success() {
+            return Err(format!("Riot API timeline error (HTTP {}): {}", res.status(), match_id));
+        }
+
+        let timeline: serde_json::Value = res
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse timeline JSON: {}", e))?;
+
+        return Ok(timeline);
+    }
+}
+
+#[tauri::command]
 pub async fn get_league_entries(
     puuid: String,
     platform_routing: String,
