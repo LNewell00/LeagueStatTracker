@@ -17,6 +17,8 @@ pub fn run() {
                 if let Ok(icon) = tauri::image::Image::from_bytes(icon_bytes) {
                     let _ = window.set_icon(icon);
                 }
+                let _ = window.show();
+                let _ = window.set_focus();
             }
             Ok(())
         })
