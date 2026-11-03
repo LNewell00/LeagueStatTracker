@@ -14,6 +14,7 @@ import {
   SkillLevelUpEvent,
   KillMapEvent,
   MinuteLeadFrame,
+  TimelineParticipant,
 } from "../types/timeline";
 import { isTauriEnvironment } from "./storage";
 
@@ -532,6 +533,34 @@ export function parseMatchTimeline(raw: any, match: ParsedMatch): ParsedTimeline
 
     const targetTeamId = match.targetParticipant.teamId;
 
+    // Build participant metadata list with champion details and distinct colors
+    const participants: TimelineParticipant[] = [];
+    for (let pid = 1; pid <= 10; pid++) {
+      const pInfo = participantMap[pid];
+      const matched = match.allParticipants.find((p) => p.puuid === pInfo?.puuid);
+      const isTarget = pid === targetParticipantId;
+      const isBlue = pInfo ? pInfo.teamId === 100 : pid <= 5;
+      
+      const blueColors = ["#06b6d4", "#3b82f6", "#10b981", "#8b5cf6", "#14b8a6"];
+      const redColors = ["#f43f5e", "#f97316", "#eab308", "#ef4444", "#d946ef"];
+      const color = isTarget
+        ? "#ec4899"
+        : isBlue
+        ? blueColors[(pid - 1) % blueColors.length]
+        : redColors[(pid - 6) % redColors.length];
+
+      participants.push({
+        participantId: pid,
+        puuid: pInfo?.puuid || "",
+        championName: pInfo?.championName || `Champion ${pid}`,
+        summonerName: pInfo?.summonerName || `Player ${pid}`,
+        teamId: pInfo?.teamId || (isBlue ? 100 : 200),
+        role: matched?.individualPosition || "",
+        isTarget,
+        color,
+      });
+    }
+
     const minuteFrames: MinuteLeadFrame[] = [];
     const skillLevelUps: SkillLevelUpEvent[] = [];
     const kills: KillMapEvent[] = [];
@@ -559,6 +588,7 @@ export function parseMatchTimeline(raw: any, match: ParsedMatch): ParsedTimeline
       let targetGold = 0;
       let targetLevel = 1;
       let targetCs = 0;
+      const participantData: Record<number, any> = {};
 
       for (let pid = 1; pid <= 10; pid++) {
         const pf = pFrames[String(pid)];
@@ -566,6 +596,14 @@ export function parseMatchTimeline(raw: any, match: ParsedMatch): ParsedTimeline
 
         const infoObj = participantMap[pid];
         const isBlue = infoObj ? infoObj.teamId === 100 : pid <= 5;
+
+        participantData[pid] = {
+          participantId: pid,
+          totalGold: pf.totalGold || 0,
+          xp: pf.xp || 0,
+          level: pf.level || 1,
+          cs: (pf.minionsKilled || 0) + (pf.jungleMinionsKilled || 0),
+        };
 
         if (isBlue) {
           blueGold += pf.totalGold || 0;
@@ -606,6 +644,7 @@ export function parseMatchTimeline(raw: any, match: ParsedMatch): ParsedTimeline
         targetGold,
         targetLevel,
         targetCs,
+        participantData,
       });
 
       // Process Events
@@ -675,6 +714,7 @@ export function parseMatchTimeline(raw: any, match: ParsedMatch): ParsedTimeline
       minuteFrames,
       skillLevelUps,
       kills,
+      participants,
     };
   } catch (err) {
     console.error("Error parsing match timeline:", err);

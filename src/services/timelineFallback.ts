@@ -17,6 +17,31 @@ export function generateFallbackTimeline(match: ParsedMatch): ParsedTimeline {
 
   const targetParticipantId = isBlueTarget ? 1 : 6;
 
+  // Build participants
+  const participants = match.allParticipants.map((p, idx) => {
+    const pid = idx + 1;
+    const isTarget = p.puuid === target.puuid;
+    const isBlue = p.teamId === 100;
+    const blueColors = ["#06b6d4", "#3b82f6", "#10b981", "#8b5cf6", "#14b8a6"];
+    const redColors = ["#f43f5e", "#f97316", "#eab308", "#ef4444", "#d946ef"];
+    const color = isTarget
+      ? "#ec4899"
+      : isBlue
+      ? blueColors[idx % blueColors.length]
+      : redColors[(idx - 5) % redColors.length];
+
+    return {
+      participantId: pid,
+      puuid: p.puuid,
+      championName: p.championName,
+      summonerName: p.summonerName || p.riotIdGameName || "Summoner",
+      teamId: p.teamId,
+      role: p.individualPosition || "",
+      isTarget,
+      color,
+    };
+  });
+
   // Generate minute frames
   const minuteFrames: MinuteLeadFrame[] = [];
   let blueGold = 2500;
@@ -51,6 +76,21 @@ export function generateFallbackTimeline(match: ParsedMatch): ParsedTimeline {
     const targetLevel = Math.min(18, Math.max(1, Math.floor(min / 1.7) + 1));
     const targetCs = Math.round(target.csPerMin * min);
 
+    // Build participantData per champion
+    const participantData: Record<number, any> = {};
+    participants.forEach((p, idx) => {
+      const isBlue = p.teamId === 100;
+      const teamPool = isBlue ? blueGold : redGold;
+      const champGold = Math.round(teamPool / 5 + (idx % 3 - 1) * 30 * min);
+      participantData[p.participantId] = {
+        participantId: p.participantId,
+        totalGold: p.isTarget ? targetGold : Math.max(500, champGold),
+        xp: Math.round((isBlue ? blueXp : redXp) / 5 + min * 25),
+        level: Math.min(18, Math.max(1, Math.floor(min / 1.8) + 1)),
+        cs: Math.round(Math.max(1, min * 6 + (idx % 4))),
+      };
+    });
+
     minuteFrames.push({
       minute: min,
       blueGold,
@@ -62,6 +102,7 @@ export function generateFallbackTimeline(match: ParsedMatch): ParsedTimeline {
       targetGold,
       targetLevel,
       targetCs,
+      participantData,
     });
   }
 
@@ -204,5 +245,6 @@ export function generateFallbackTimeline(match: ParsedMatch): ParsedTimeline {
     minuteFrames,
     skillLevelUps,
     kills,
+    participants,
   };
 }

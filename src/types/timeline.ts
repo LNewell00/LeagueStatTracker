@@ -1,3 +1,11 @@
+export interface ParticipantFrameData {
+  participantId: number;
+  totalGold: number;
+  xp: number;
+  level: number;
+  cs: number;
+}
+
 export interface MinuteLeadFrame {
   minute: number;
   blueGold: number;
@@ -9,6 +17,7 @@ export interface MinuteLeadFrame {
   targetGold: number;
   targetLevel: number;
   targetCs: number;
+  participantData?: Record<number, ParticipantFrameData>;
 }
 
 export type SkillSlot = "Q" | "W" | "E" | "R";
@@ -39,6 +48,17 @@ export interface KillMapEvent {
   isTargetAssist: boolean;
 }
 
+export interface TimelineParticipant {
+  participantId: number;
+  puuid: string;
+  championName: string;
+  summonerName: string;
+  teamId: number; // 100 or 200
+  role: string;
+  isTarget: boolean;
+  color: string;
+}
+
 export interface ParsedTimeline {
   matchId: string;
   targetParticipantId: number;
@@ -49,5 +69,5 @@ export interface ParsedTimeline {
   minuteFrames: MinuteLeadFrame[];
   skillLevelUps: SkillLevelUpEvent[];
   kills: KillMapEvent[];
+  participants: TimelineParticipant[];
 }
-
