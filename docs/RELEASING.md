@@ -65,3 +65,4 @@ git push origin main
 - **Patch (`0.1.0` ➔ `0.1.1`)**: Bug fixes, minor UI tweaks, telemetry adjustments.
 - **Minor (`0.1.1` ➔ `0.2.0`)**: Major new features (e.g. Game Video Recording, Replay Viewer).
 - **Major (`0.9.0` ➔ `1.0.0`)**: Complete public release ready for general production use.
+

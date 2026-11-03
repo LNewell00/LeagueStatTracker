@@ -43,6 +43,24 @@ export interface LiveItem {
   slot: number;
 }
 
+export interface LivePlayerRunes {
+  keystone?: {
+    displayName: string;
+    id?: number;
+    rawDescription?: string;
+  };
+  primaryRuneTree?: {
+    displayName: string;
+    id?: number;
+  };
+  secondaryRuneTree?: {
+    displayName: string;
+    id?: number;
+  };
+  hasMagicalFootwear?: boolean;
+  [key: string]: unknown;
+}
+
 export interface LivePlayer {
   championName: string;
   isBot: boolean;
@@ -51,7 +69,7 @@ export interface LivePlayer {
   level: number;
   position: string;
   respawnTimer: number;
-  runes: Record<string, unknown>;
+  runes?: LivePlayerRunes | Record<string, unknown>;
   scores: LiveScores;
   skinID: number;
   summonerName: string;
