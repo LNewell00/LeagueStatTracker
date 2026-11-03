@@ -172,13 +172,36 @@ export function parseRawMatch(raw: any, targetPuuid: string): ParsedMatch | null
         summoner1Id: p.summoner1Id,
         summoner2Id: p.summoner2Id,
         totalDamageDealtToChampions: p.totalDamageDealtToChampions || 0,
+        totalDamageTaken: p.totalDamageTaken || 0,
+        damageSelfMitigated: p.damageSelfMitigated || 0,
         goldEarned: p.goldEarned || 0,
         visionScore: p.visionScore || 0,
+        wardsPlaced: p.wardsPlaced || 0,
+        wardsKilled: p.wardsKilled || 0,
+        controlWardsPlaced: p.visionWardsBoughtInGame || p.detectorWardsPlaced || 0,
+        individualPosition: p.individualPosition || p.teamPosition || "",
+        turretKills: p.turretKills || 0,
         teamId: p.teamId,
       };
     });
 
     const target = allParticipants.find((p) => p.puuid === targetPuuid) || allParticipants[0];
+
+    // Compute team stats from info.teams or participants
+    const teams = (info.teams || []).map((t: any) => {
+      const teamPlayers = allParticipants.filter((p) => p.teamId === t.teamId);
+      const totalKills = teamPlayers.reduce((acc, p) => acc + p.kills, 0);
+      const totalGold = teamPlayers.reduce((acc, p) => acc + p.goldEarned, 0);
+      return {
+        teamId: t.teamId,
+        win: !!t.win,
+        baronKills: t.objectives?.baron?.kills || 0,
+        dragonKills: t.objectives?.dragon?.kills || 0,
+        towerKills: t.objectives?.tower?.kills || 0,
+        totalKills,
+        totalGold,
+      };
+    });
 
     return {
       matchId: metadata.matchId,
@@ -188,6 +211,7 @@ export function parseRawMatch(raw: any, targetPuuid: string): ParsedMatch | null
       queueId: info.queueId,
       targetParticipant: target,
       allParticipants,
+      teams,
     };
   } catch (err) {
     console.error("Error parsing match data:", err);

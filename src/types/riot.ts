@@ -52,9 +52,26 @@ export interface MatchParticipant {
   summoner1Id: number;
   summoner2Id: number;
   totalDamageDealtToChampions: number;
+  totalDamageTaken: number;
+  damageSelfMitigated: number;
   goldEarned: number;
   visionScore: number;
+  wardsPlaced: number;
+  wardsKilled: number;
+  controlWardsPlaced: number;
+  individualPosition: string;
+  turretKills: number;
   teamId: number;
+}
+
+export interface MatchTeamStats {
+  teamId: number;
+  win: boolean;
+  baronKills: number;
+  dragonKills: number;
+  towerKills: number;
+  totalKills: number;
+  totalGold: number;
 }
 
 export interface ParsedMatch {
@@ -65,6 +82,7 @@ export interface ParsedMatch {
   queueId: number;
   targetParticipant: MatchParticipant;
   allParticipants: MatchParticipant[];
+  teams?: MatchTeamStats[];
 }
 
 export interface PlayerStatsSummary {
