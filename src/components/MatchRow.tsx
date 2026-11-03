@@ -47,6 +47,37 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
     return "text-slate-300 font-semibold";
   };
 
+  const getQueueName = (queueId?: number, gameMode?: string): string => {
+    switch (queueId) {
+      case 420:
+        return "Ranked Solo";
+      case 440:
+        return "Ranked Flex";
+      case 400:
+        return "Normal Draft";
+      case 430:
+        return "Normal Blind";
+      case 450:
+        return "ARAM";
+      case 490:
+        return "Quickplay";
+      case 700:
+        return "Clash";
+      case 830:
+      case 840:
+      case 850:
+        return "Co-op vs AI";
+      case 0:
+        return "Custom Game";
+      default:
+        if (gameMode === "PRACTICETOOL") return "Practice Tool";
+        if (gameMode === "ARAM") return "ARAM";
+        if (gameMode === "CHERRY") return "Arena";
+        if (gameMode === "CLASSIC") return "Normal / Custom";
+        return gameMode ? gameMode.charAt(0) + gameMode.slice(1).toLowerCase() : "Normal";
+    }
+  };
+
   const items = [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5];
 
   // Divide participants into Blue Team (100) and Red Team (200)
@@ -101,7 +132,9 @@ export const MatchRow: React.FC<MatchRowProps> = ({ match, onOpenBreakdown }) =>
               </span>
             </div>
             <div className="text-xs text-slate-400 mt-1.5">
-              <span className="font-medium text-slate-300">Ranked Solo</span>
+              <span className="font-medium text-slate-300">
+                {getQueueName(match.queueId, match.gameMode)}
+              </span>
               <div className="text-[11px] text-slate-500">
                 {formatDuration(match.gameDuration)} • {formatTimeAgo(match.gameCreation)}
               </div>
