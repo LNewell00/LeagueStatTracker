@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "LeagueStatTracker",
+  "version": "0.1.0",
+  "identifier": "com.leaguestat.tracker",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "League of Legends Stat Tracker",
+        "width": 1280,
+        "height": 860,
+        "minWidth": 1000,
+        "minHeight": 680,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "opener": {},
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEwQjFGOUNBQkEyQUFBRkYKUldUL3FpcTZ5dm14RUo0WnJ2bU9UQTFUb3dCNUVJckRadzZoY1hJQkgrbTI5aEdCT0FOZ1kwdWwK",
+      "endpoints": [
+        "https://github.com/logan3146/LeagueStatTracker/releases/latest/download/latest.json"
+      ]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico",
+      "icons/icon.png"
+    ]
+  }
+}
