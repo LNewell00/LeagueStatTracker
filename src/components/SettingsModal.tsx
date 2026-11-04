@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AppPreferences, savePreferences, clearLocalCache } from "../services/storage";
-import { X, Key, Trash2, ExternalLink, Check, RefreshCw, ArrowUpCircle, Download } from "lucide-react";
+import { X, Key, Trash2, ExternalLink, Check, RefreshCw, ArrowUpCircle, Download, Video } from "lucide-react";
 import { SUPPORTED_REGIONS } from "../types/riot";
 import { checkAppUpdate, installUpdateAndRestart } from "../services/updater";
 
@@ -24,6 +24,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [tagLine, setTagLine] = useState(preferences.tagLine);
   const [region, setRegion] = useState(preferences.region);
   const [matchCount, setMatchCount] = useState<number>(preferences.matchCount || 20);
+  const [enableVodRecording, setEnableVodRecording] = useState<boolean>(
+    preferences.enableVodRecording !== undefined ? preferences.enableVodRecording : true
+  );
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   // Auto-updater states
@@ -44,7 +47,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         setAvailableUpdate(result.updateHandle);
         setUpdateStatus(`New version v${result.version} is available!`);
       } else {
-        setUpdateStatus("You are running the latest version (v0.1.0).");
+        setUpdateStatus("You are running the latest version (v0.2.0).");
       }
     } catch {
       setUpdateStatus("Could not reach update server. Check your connection.");
@@ -77,6 +80,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       tagLine: tagLine.trim(),
       region,
       matchCount,
+      enableVodRecording,
     };
     savePreferences(newPrefs);
     onSavePreferences(newPrefs);
@@ -107,27 +111,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-sm text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
+            className="text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSave} className="p-4 sm:p-5 space-y-4">
+        {/* Content Form */}
+        <form onSubmit={handleSave} className="p-4 space-y-3.5 max-h-[85vh] overflow-y-auto custom-scrollbar">
           {/* Riot API Key */}
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">
-                Riot API Developer Key
+                Riot Games API Key
               </label>
               <a
                 href="https://developer.riotgames.com/"
                 target="_blank"
                 rel="noreferrer"
-                className="text-[10px] text-riot-red hover:underline flex items-center gap-1"
+                className="text-[10px] text-riot-red hover:underline flex items-center gap-0.5"
               >
-                <span>Get Key</span>
+                <span>Portal</span>
                 <ExternalLink className="w-2.5 h-2.5" />
               </a>
             </div>
@@ -136,45 +140,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              className="w-full px-3 py-1.5 text-xs bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 focus:outline-none focus:border-riot-red"
+              className="w-full px-2.5 py-1.5 text-xs bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded text-neutral-800 dark:text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-riot-red font-mono"
             />
-            <p className="text-[10px] text-neutral-400 mt-0.5">
-              Personal keys refresh every 24h. Persisted locally in encrypted storage.
+            <p className="text-[10px] text-neutral-400 mt-1">
+              Personal Development Keys refresh every 24 hours.
             </p>
           </div>
 
-          {/* Default Account & Region */}
-          <div className="grid grid-cols-2 gap-2.5">
+          {/* Summoner Name & Tag */}
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">
-                Default Summoner Name
+                Game Name
               </label>
               <input
                 type="text"
                 value={gameName}
                 onChange={(e) => setGameName(e.target.value)}
-                placeholder="e.g. Faker"
-                className="w-full px-2.5 py-1.5 text-xs bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-riot-red"
+                placeholder="Faker"
+                className="w-full px-2.5 py-1.5 text-xs bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-riot-red"
               />
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">
-                Tagline
+                Tag Line (no #)
               </label>
               <input
                 type="text"
                 value={tagLine}
                 onChange={(e) => setTagLine(e.target.value)}
-                placeholder="e.g. KR1"
-                className="w-full px-2.5 py-1.5 text-xs bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-riot-red"
+                placeholder="KR1"
+                className="w-full px-2.5 py-1.5 text-xs bg-neutral-100 dark:bg-[#141721] border border-neutral-300 dark:border-neutral-700 rounded text-neutral-800 dark:text-neutral-200 focus:outline-none focus:border-riot-red"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
+          {/* Region and Match Count */}
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block mb-1">
-                Default Server
+                Default Region
               </label>
               <select
                 value={region}
@@ -206,6 +211,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
+          {/* Automated Game Detection & VOD Recording Option */}
+          <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+            <div className="pr-4">
+              <div className="font-bold text-neutral-800 dark:text-neutral-200 text-xs flex items-center gap-1.5">
+                <Video className="w-3.5 h-3.5 text-riot-red" />
+                <span>Automated Game Detection & VODs</span>
+              </div>
+              <div className="text-[10px] text-neutral-400">
+                Auto-detect live League matches (Practice Tool, Normals, Ranked) & enable VOD studio
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={enableVodRecording}
+                onChange={(e) => setEnableVodRecording(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-neutral-300 peer-focus:outline-none rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-riot-red"></div>
+            </label>
+          </div>
+
           {/* Local Cache Management */}
           <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
             <div>
@@ -215,7 +242,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <button
               type="button"
               onClick={handleClear}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs hover:border-riot-red transition-all"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs hover:border-riot-red transition-all cursor-pointer"
             >
               <Trash2 className="w-3 h-3 text-riot-red" />
               <span>Purge Cache</span>
@@ -231,14 +258,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span>Version Distribution</span>
                 </div>
                 <div className="text-[10px] text-neutral-400">
-                  Build v0.1.0 • GitHub Releases Channel
+                  Build v0.2.1 • GitHub Releases Channel
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleCheckUpdate}
                 disabled={isCheckingUpdate || isDownloading}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs hover:border-riot-red transition-all disabled:opacity-50"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-800 dark:text-neutral-200 text-xs hover:border-riot-red transition-all disabled:opacity-50 cursor-pointer"
               >
                 <RefreshCw className={`w-3 h-3 ${isCheckingUpdate ? "animate-spin" : ""}`} />
                 <span>Check Updates</span>
@@ -252,24 +279,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     type="button"
                     onClick={handleInstallUpdate}
-                    className="mt-1.5 w-full py-1 px-2.5 rounded-sm bg-riot-red text-white font-bold text-xs flex items-center justify-center gap-1 hover:bg-riot-redHover transition-all"
+                    className="mt-1.5 w-full py-1 px-2.5 rounded-sm bg-riot-red text-white font-bold text-xs flex items-center justify-center gap-1 hover:bg-riot-redHover transition-all cursor-pointer"
                   >
                     <Download className="w-3 h-3" />
                     <span>Download & Apply</span>
                   </button>
                 )}
-                {isDownloading && (
-                  <div className="mt-1.5 space-y-1">
-                    <div className="flex justify-between text-[9px] text-neutral-400">
-                      <span>Downloading patch...</span>
-                      <span>{downloadProgress !== null ? `${downloadProgress}%` : "Wait..."}</span>
-                    </div>
-                    <div className="w-full bg-neutral-200 dark:bg-neutral-800 rounded-none h-1 overflow-hidden">
+                {isDownloading && downloadProgress !== null && (
+                  <div className="mt-2 space-y-1">
+                    <div className="w-full bg-neutral-200 dark:bg-neutral-800 rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-riot-red h-full transition-all duration-300"
-                        style={{ width: `${downloadProgress || 50}%` }}
+                        className="bg-riot-red h-full transition-all"
+                        style={{ width: `${downloadProgress}%` }}
                       />
                     </div>
+                    <p className="text-[10px] text-neutral-400">Downloading: {downloadProgress}%</p>
                   </div>
                 )}
               </div>
@@ -277,17 +301,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-2 flex items-center justify-end gap-2 border-t border-neutral-200 dark:border-neutral-800">
+          <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 rounded-sm text-xs font-semibold text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-all"
+              className="px-3 py-1.5 rounded-sm bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 text-xs font-bold transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex items-center gap-1 px-4 py-1.5 rounded bg-riot-red text-white font-bold text-xs hover:bg-riot-redHover active:scale-95 transition-all shadow-sm"
+              className="flex items-center gap-1 px-4 py-1.5 rounded-sm bg-riot-red hover:bg-riot-redHover text-white text-xs font-bold uppercase transition-all shadow-sm cursor-pointer"
             >
               {savedSuccess ? (
                 <>
@@ -295,10 +319,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span>Saved!</span>
                 </>
               ) : (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Save Changes</span>
-                </>
+                <span>Save Preferences</span>
               )}
             </button>
           </div>

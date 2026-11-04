@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { convertFileSrc, isTauri } from "@tauri-apps/api/core";
+import { logger } from "../services/logger";
 import {
   screenRecorder,
   saveRecordingLocally,
@@ -6,6 +8,9 @@ import {
   deleteDiskRecording,
   openRecordingsFolder,
   fetchRoflReplays,
+  launchRoflReplay,
+  highlightFileInExplorer,
+  downloadVodFile,
   RecordingMeta,
   RoflReplayMeta,
   QualityPreset,
@@ -21,6 +26,7 @@ import {
   MicOff,
   Clock,
   Trash2,
+  Download,
   Bookmark,
   Plus,
   Maximize2,
@@ -32,6 +38,7 @@ import {
   Sliders,
   CheckCircle2,
   AlertCircle,
+  VideoOff,
 } from "lucide-react";
 
 interface BookmarkItem {
@@ -40,7 +47,17 @@ interface BookmarkItem {
   label: string;
 }
 
-export const RecordingTab: React.FC = () => {
+interface RecordingTabProps {
+  isEnabled?: boolean;
+  onEnable?: () => void;
+  onOpenSettings?: () => void;
+}
+
+export const RecordingTab: React.FC<RecordingTabProps> = ({
+  isEnabled = true,
+  onEnable,
+  onOpenSettings,
+}) => {
   // Recorder states
   const [recorderState, setRecorderState] = useState<"idle" | "recording" | "paused">("idle");
   const [recordedSec, setRecordedSec] = useState<number>(0);
@@ -51,7 +68,7 @@ export const RecordingTab: React.FC = () => {
   // Library & playback states
   const [diskVods, setDiskVods] = useState<RecordingMeta[]>([]);
   const [roflReplays, setRoflReplays] = useState<RoflReplayMeta[]>([]);
-  const [libraryTab, setLibraryTab] = useState<"vods" | "rofl">("vods");
+  const [libraryTab, setLibraryTab] = useState<"all" | "rofl" | "vods">("all");
   const [activeVodUrl, setActiveVodUrl] = useState<string | null>(null);
   const [activeVodTitle, setActiveVodTitle] = useState<string>("Select a recording to review");
 
@@ -104,17 +121,6 @@ export const RecordingTab: React.FC = () => {
     return `${(mb / 1024).toFixed(2)} GB`;
   };
 
-  // Start recording
-  const handleStartRecording = async () => {
-    try {
-      setStatusMessage({ type: "info", text: "Select your League of Legends game window or screen to begin..." });
-      await screenRecorder.start(quality, includeMic);
-      setStatusMessage({ type: "success", text: "Recording live game stream with hardware acceleration!" });
-    } catch (err: any) {
-      setStatusMessage({ type: "error", text: err?.message || "Failed to start recording." });
-    }
-  };
-
   // Pause / Resume
   const handleTogglePause = () => {
     if (recorderState === "recording") {
@@ -156,6 +162,7 @@ export const RecordingTab: React.FC = () => {
   const handlePlayVod = async (vod: RecordingMeta) => {
     setActiveVodTitle(vod.name);
     setBookmarks([]);
+    logger.log("info", "RecordingTab", `Selected VOD for playback: ${vod.name} (${vod.path})`);
 
     // Check if we have blob in IndexedDB
     const storedBlob = await getStoredVodBlob(vod.name);
@@ -163,13 +170,23 @@ export const RecordingTab: React.FC = () => {
       const url = URL.createObjectURL(storedBlob);
       setActiveVodUrl(url);
     } else {
-      // In Tauri or modern browser, file:// or direct path
-      setActiveVodUrl(vod.path.startsWith("file://") ? vod.path : `file://${vod.path}`);
+      let url = vod.path;
+      try {
+        if (isTauri()) {
+          url = convertFileSrc(vod.path);
+          logger.log("info", "RecordingTab", `Converted path via asset protocol: ${url}`);
+        } else {
+          url = vod.path.startsWith("file://") ? vod.path : `file://${vod.path}`;
+        }
+      } catch (err: any) {
+        logger.log("error", "RecordingTab", `Failed convertFileSrc: ${err?.message || err}`);
+        url = vod.path.startsWith("file://") ? vod.path : `file://${vod.path}`;
+      }
+      setActiveVodUrl(url);
     }
 
     if (videoRef.current) {
       videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
     }
   };
 
@@ -183,6 +200,39 @@ export const RecordingTab: React.FC = () => {
       }
       await loadLibrary();
     }
+  };
+
+  const handleExportVod = async (vod: RecordingMeta) => {
+    const storedBlob = await getStoredVodBlob(vod.name);
+    if (storedBlob) {
+      downloadVodFile(storedBlob, vod.name);
+      setStatusMessage({ type: "success", text: `Exported ${vod.name} to browser downloads!` });
+    } else {
+      await highlightFileInExplorer(vod.path);
+    }
+  };
+
+  const handleLaunchReplay = async (rep: RoflReplayMeta) => {
+    try {
+      setStatusMessage({
+        type: "info",
+        text: `Booting League of Legends client with replay: ${rep.file_name}...`,
+      });
+      await launchRoflReplay(rep.path);
+      setStatusMessage({
+        type: "success",
+        text: `Replay launched! League of Legends spectator camera starting up.`,
+      });
+    } catch (err: any) {
+      setStatusMessage({
+        type: "error",
+        text: err?.message || "Could not launch League client. Check if League is installed.",
+      });
+    }
+  };
+
+  const handleShowReplayInFolder = async (rep: RoflReplayMeta) => {
+    await highlightFileInExplorer(rep.path);
   };
 
   // Video playback controls
@@ -232,6 +282,42 @@ export const RecordingTab: React.FC = () => {
     }
   };
 
+  if (!isEnabled) {
+    return (
+      <div className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0e14] rounded p-12 text-center max-w-xl mx-auto shadow-sm space-y-5 font-mono animate-in fade-in my-12">
+        <div className="w-16 h-16 rounded-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 flex items-center justify-center mx-auto text-neutral-400">
+          <VideoOff className="w-8 h-8 text-neutral-400" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-base font-black text-neutral-900 dark:text-neutral-100 uppercase tracking-wider">
+            Game Detection & Recordings Disabled
+          </h2>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-md mx-auto leading-relaxed">
+            Enable option in settings to see recordings, automatically detect live League of Legends games in the background, and review match VODs with smart bookmarks.
+          </p>
+        </div>
+        <div className="pt-2 flex items-center justify-center gap-3">
+          {onEnable && (
+            <button
+              onClick={onEnable}
+              className="px-5 py-2.5 rounded-sm bg-riot-red hover:bg-riot-redHover text-white font-bold text-xs uppercase tracking-wider transition-all shadow-sm cursor-pointer active:scale-95"
+            >
+              Enable Option to See Recordings
+            </button>
+          )}
+          {onOpenSettings && (
+            <button
+              onClick={onOpenSettings}
+              className="px-4 py-2.5 rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-riot-red font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+            >
+              Open Settings
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 font-mono">
       {/* ========================================================= */}
@@ -274,15 +360,7 @@ export const RecordingTab: React.FC = () => {
 
         {/* Center: Recording Actions */}
         <div className="flex items-center gap-2">
-          {recorderState === "idle" ? (
-            <button
-              onClick={handleStartRecording}
-              className="flex items-center gap-2 px-5 py-2 rounded-sm bg-riot-red hover:bg-riot-redHover text-white font-black text-xs uppercase tracking-wider shadow-sm transition-all active:scale-95 cursor-pointer"
-            >
-              <Video className="w-4 h-4" />
-              <span>Record Game</span>
-            </button>
-          ) : (
+          {recorderState !== "idle" ? (
             <>
               <button
                 onClick={handleTogglePause}
@@ -309,6 +387,11 @@ export const RecordingTab: React.FC = () => {
                 <span>Stop & Save VOD</span>
               </button>
             </>
+          ) : (
+            <div className="text-[11px] text-neutral-500 dark:text-neutral-400 font-mono flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>Automated recording active • Captures on game launch</span>
+            </div>
           )}
 
           <button
@@ -408,8 +491,10 @@ export const RecordingTab: React.FC = () => {
           <div className="relative bg-black rounded overflow-hidden aspect-video flex items-center justify-center border border-neutral-800">
             {activeVodUrl ? (
               <video
+                key={activeVodUrl}
                 ref={videoRef}
                 src={activeVodUrl}
+                autoPlay
                 onTimeUpdate={() => {
                   if (videoRef.current) {
                     setCurrentTime(videoRef.current.currentTime);
@@ -417,8 +502,23 @@ export const RecordingTab: React.FC = () => {
                 }}
                 onLoadedMetadata={() => {
                   if (videoRef.current) {
-                    setVideoDuration(videoRef.current.duration || 0);
+                    const dur = videoRef.current.duration || 0;
+                    setVideoDuration(dur);
+                    logger.log("info", "VideoPlayer", `Loaded metadata: duration=${dur.toFixed(1)}s`);
                   }
+                }}
+                onCanPlay={() => {
+                  if (videoRef.current) {
+                    videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+                  }
+                }}
+                onError={() => {
+                  const mediaErr = videoRef.current?.error;
+                  logger.log(
+                    "error",
+                    "VideoPlayer",
+                    `Playback error for ${activeVodUrl}: code=${mediaErr?.code} msg=${mediaErr?.message || "unknown"}`
+                  );
                 }}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
@@ -432,7 +532,7 @@ export const RecordingTab: React.FC = () => {
                   No recording currently loaded
                 </p>
                 <p className="text-xs text-neutral-500">
-                  Click "Record Game" above to capture a match, or select a clip from your library on the right.
+                  Select a match recording from your library on the right to review playback and bookmarks.
                 </p>
               </div>
             )}
@@ -648,6 +748,13 @@ export const RecordingTab: React.FC = () => {
                             <Play className="w-3 h-3 fill-current" />
                           </button>
                           <button
+                            onClick={() => handleExportVod(vod)}
+                            className="p-1.5 rounded-sm bg-neutral-200 dark:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white text-neutral-500 transition-all cursor-pointer"
+                            title="Export file / Show in folder"
+                          >
+                            <Download className="w-3 h-3" />
+                          </button>
+                          <button
                             onClick={() => handleDeleteVod(vod)}
                             className="p-1.5 rounded-sm bg-neutral-200 dark:bg-neutral-800 hover:text-riot-red text-neutral-500 transition-all cursor-pointer"
                             title="Delete file"
@@ -666,19 +773,30 @@ export const RecordingTab: React.FC = () => {
           {/* ROFL Replays List */}
           {libraryTab === "rofl" && (
             <div className="space-y-2 overflow-y-auto max-h-[540px] custom-scrollbar pr-1">
+              {/* Informational Guidance Banner */}
+              <div className="p-2.5 rounded-sm bg-blue-500/10 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs font-mono space-y-1">
+                <p className="font-bold flex items-center gap-1.5">
+                  <HardDrive className="w-3.5 h-3.5" />
+                  <span>Riot In-Engine Replays (.rofl)</span>
+                </p>
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                  These are 3D spectator replays generated by the League client. Click <strong>Launch</strong> below to boot directly into the game's spectator mode with free camera!
+                </p>
+              </div>
+
               {roflReplays.length === 0 ? (
                 <div className="py-12 text-center text-xs text-neutral-500">
                   <HardDrive className="w-8 h-8 text-neutral-400 mx-auto mb-2 opacity-50" />
                   <p className="font-bold">No .rofl replay files found</p>
                   <p className="text-[11px] text-neutral-400 mt-1">
-                    When you download a replay in the official League client, it appears in Documents/League of Legends/Replays.
+                    When you download a replay from your Match History inside the official League client, it appears in Documents/League of Legends/Replays.
                   </p>
                 </div>
               ) : (
                 roflReplays.map((rep) => (
                   <div
                     key={rep.path}
-                    className="p-2.5 rounded-sm border bg-neutral-50 dark:bg-[#0f121a] border-neutral-200 dark:border-neutral-800 text-xs"
+                    className="p-2.5 rounded-sm border bg-neutral-50 dark:bg-[#0f121a] border-neutral-200 dark:border-neutral-800 text-xs hover:border-neutral-300 dark:hover:border-neutral-700 transition-all"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="truncate flex-1">
@@ -693,9 +811,24 @@ export const RecordingTab: React.FC = () => {
                         </p>
                       </div>
 
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-sm font-bold bg-neutral-200 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
-                        ROFL
-                      </span>
+                      {/* Action buttons to launch replay or locate file */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleLaunchReplay(rep)}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-riot-red hover:bg-riot-redHover text-white text-[11px] font-bold uppercase cursor-pointer transition-all shadow-sm"
+                          title="Launch in League of Legends Spectator"
+                        >
+                          <Play className="w-3 h-3 fill-current" />
+                          <span>Launch</span>
+                        </button>
+                        <button
+                          onClick={() => handleShowReplayInFolder(rep)}
+                          className="p-1.5 rounded-sm bg-neutral-200 dark:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white text-neutral-500 transition-all cursor-pointer"
+                          title="Show file in Windows Explorer"
+                        >
+                          <FolderOpen className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))

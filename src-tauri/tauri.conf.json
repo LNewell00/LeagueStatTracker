@@ -25,7 +25,15 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$VIDEO/**",
+          "$VIDEO/**/*",
+          "**"
+        ]
+      }
     }
   },
   "plugins": {

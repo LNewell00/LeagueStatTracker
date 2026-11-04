@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Header } from "./components/Header";
 import { NavigationTabs, TabType } from "./components/NavigationTabs";
 import { StatsOverview } from "./components/StatsOverview";
@@ -10,7 +10,7 @@ import { ChampionPoolTab } from "./components/ChampionPoolTab";
 import { ItemBuildPlannerTab } from "./components/ItemBuildPlannerTab";
 import { MatchBreakdownModal } from "./components/MatchBreakdownModal";
 import { RecordingTab } from "./components/RecordingTab";
-import { screenRecorder } from "./services/screenRecorder";
+import { screenRecorder, saveRecordingLocally } from "./services/screenRecorder";
 import { SettingsModal } from "./components/SettingsModal";
 import { ParsedMatch, PlayerStatsSummary, RankedEntry, MmrDataPoint } from "./types/riot";
 import { LivePollerState } from "./types/live";
@@ -39,13 +39,17 @@ import {
 import { loadChampionPool, loadCustomBuilds } from "./services/buildsStorage";
 import { initDDragonVersion } from "./services/ddragon";
 import { MOCK_MATCHES, MOCK_SUMMARY } from "./services/mockData";
-import { AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, Radio } from "lucide-react";
+import { OnboardingModal } from "./components/OnboardingModal";
+import { DebugConsole } from "./components/DebugConsole";
+import { logger } from "./services/logger";
 
 export const App: React.FC = () => {
   const [preferences, setPreferences] = useState<AppPreferences>(loadPreferences);
   const [theme, setTheme] = useState<"dark" | "light">(getInitialTheme);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [dismissedLiveAlert, setDismissedLiveAlert] = useState(false);
 
   useEffect(() => {
     return screenRecorder.onStateChange((st) => {
@@ -110,6 +114,89 @@ export const App: React.FC = () => {
       liveClientService.stop();
     };
   }, []);
+
+    useEffect(() => {
+    if (!liveState.isActive) {
+      setDismissedLiveAlert(false);
+    }
+  }, [liveState.isActive]);
+
+  // Automated background game detection and VOD recording
+  const prevLiveActiveRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    const wasActive = prevLiveActiveRef.current;
+    const isNowActive = liveState.isActive;
+    prevLiveActiveRef.current = isNowActive;
+
+    if (!preferences.enableVodRecording) return;
+
+    // Transition 1: Match started (False -> True)
+    if (!wasActive && isNowActive) {
+      logger.log("info", "App", `Match started transition! Waiting 2.5s for League window to render...`);
+      setTimeout(() => {
+        if (!screenRecorder.isRecordingActive) {
+          logger.log("info", "App", "Starting background automated capture for League window...");
+          screenRecorder
+            .start("720p", false)
+            .then(() => {
+              logger.log("success", "App", "Automated match recording successfully engaged on League window!");
+              setStatusMessage({
+                type: "success",
+                text: "🔴 Automated match recording engaged! Capturing League window in background.",
+              });
+            })
+            .catch((err) => {
+              logger.log("error", "App", `Automated recording start failed: [${err?.name}] ${err?.message}`, {
+                name: err?.name,
+                message: err?.message,
+                stack: err?.stack,
+              });
+              setStatusMessage({
+                type: "error",
+                text: `Auto-record failed: ${err?.name || "Error"} - see Debug Logs`,
+              });
+            });
+        }
+      }, 2500);
+    }
+
+    // Transition 2: Match finished (True -> False)
+    if (wasActive && !isNowActive) {
+      logger.log("info", "App", "Match finished transition! Checking active recording...");
+      if (screenRecorder.isRecordingActive) {
+        logger.log("info", "App", "Stopping and finalizing recording...");
+        screenRecorder
+          .stop()
+          .then(async ({ blob, durationSec, path }) => {
+            logger.log("info", "App", `Recording stopped! duration=${durationSec}s, size=${blob.size} bytes, path=${path || "memory"}`);
+            if (durationSec >= 3) {
+              if (path) {
+                logger.log("success", "App", `Native VOD saved to: ${path}`);
+                setStatusMessage({
+                  type: "success",
+                  text: `✅ Match ended! Native MP4 VOD saved to ${path}`,
+                });
+              } else {
+                const dateStr = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+                const fileName = `LoL_Game_${dateStr}.webm`;
+                const res = await saveRecordingLocally(blob, fileName, durationSec);
+                logger.log("success", "App", `VOD saved successfully: ${res.path || res.id}`);
+                setStatusMessage({
+                  type: "success",
+                  text: `✅ Match ended! VOD automatically saved to Videos/LeagueStatTracker/${fileName}`,
+                });
+              }
+            } else {
+              logger.log("warn", "App", "Recording was under 3 seconds, skipping save.");
+            }
+          })
+          .catch((err) => {
+            logger.log("error", "App", `Failed to auto-save recording: ${err?.message}`, err);
+          });
+      }
+    }
+  }, [liveState.isActive, preferences.enableVodRecording]);
 
   const handleToggleTheme = () => {
     const nextTheme: "dark" | "light" = theme === "dark" ? "light" : "dark";
@@ -597,7 +684,15 @@ export const App: React.FC = () => {
         {/* Tab 7: VOD & Recordings */}
         {activeTab === "recording" && (
           <div className="space-y-6 animate-in fade-in">
-            <RecordingTab />
+            <RecordingTab
+              isEnabled={preferences.enableVodRecording}
+              onEnable={() => {
+                const updated = { ...preferences, enableVodRecording: true };
+                setPreferences(updated);
+                savePreferences(updated);
+              }}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+            />
           </div>
         )}
 
@@ -633,6 +728,70 @@ export const App: React.FC = () => {
         />
       )}
 
+      {/* Automated Game Detection Pop-up Toast */}
+      {liveState.isActive && !dismissedLiveAlert && activeTab !== "live" && (
+        <div className="fixed bottom-6 right-6 z-40 max-w-md bg-white dark:bg-[#121520] border-2 border-riot-red rounded shadow-2xl p-4 font-mono animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded bg-riot-red/15 border border-riot-red/40 flex items-center justify-center text-riot-red shrink-0">
+              <Radio className="w-5 h-5 animate-pulse" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black uppercase text-riot-red tracking-wider">
+                  Live Match Detected!
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-riot-red text-white font-bold">
+                  PORT 2999
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-600 dark:text-neutral-300 leading-tight">
+                {liveState.data?.gameData?.gameMode || "League of Legends"} match in progress (
+                {Math.floor((liveState.data?.gameData?.gameTime || 0) / 60)}m). Background tracking active!
+              </p>
+              <div className="pt-2 flex items-center gap-2">
+                <button
+                  onClick={() => setActiveTab("live")}
+                  className="px-3 py-1.5 rounded-sm bg-riot-red hover:bg-riot-redHover text-white text-[11px] font-bold uppercase transition-all shadow-sm cursor-pointer"
+                >
+                  View Live Feed
+                </button>
+                {preferences.enableVodRecording && (
+                  <button
+                    onClick={() => setActiveTab("recording")}
+                    className="px-3 py-1.5 rounded-sm bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 text-[11px] font-bold uppercase transition-all cursor-pointer"
+                  >
+                    VOD Studio
+                  </button>
+                )}
+                <button
+                  onClick={() => setDismissedLiveAlert(true)}
+                  className="text-[11px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 px-2 py-1 cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* First-time Onboarding Policy Modal */}
+      <OnboardingModal
+        isOpen={!preferences.hasCompletedOnboarding}
+        onSelectPolicy={(enableVod) => {
+          const updated = {
+            ...preferences,
+            enableVodRecording: enableVod,
+            hasCompletedOnboarding: true,
+          };
+          setPreferences(updated);
+          savePreferences(updated);
+          if (enableVod) {
+            setActiveTab("recording");
+          }
+        }}
+      />
+
       {/* Settings Modal */}
       <SettingsModal
         isOpen={isSettingsOpen}
@@ -641,6 +800,9 @@ export const App: React.FC = () => {
         onSavePreferences={(newPrefs) => setPreferences(newPrefs)}
         onCacheCleared={handleCacheCleared}
       />
+
+      {/* Floating Debug & Telemetry Console */}
+      <DebugConsole />
 
       {/* App Footer & Legal Disclaimer */}
       <footer className="border-t border-neutral-200 dark:border-neutral-800 py-4 px-4 text-center text-xs font-mono text-neutral-500 mt-auto bg-white/50 dark:bg-[#0c0e14]/50">

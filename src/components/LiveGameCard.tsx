@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { LivePollerState, LivePlayer, LiveItem } from "../types/live";
 import {
   Activity,
@@ -13,9 +13,16 @@ import {
   Eye,
   TrendingUp,
   TrendingDown,
+  Square,
+  FolderOpen,
 } from "lucide-react";
 import { getChampionIconUrl } from "../services/ddragon";
 import { ItemTooltip } from "./ItemTooltip";
+import {
+  screenRecorder,
+  saveRecordingLocally,
+  openRecordingsFolder,
+} from "../services/screenRecorder";
 
 interface LiveGameCardProps {
   liveState: LivePollerState;
@@ -27,32 +34,35 @@ interface LiveGameCardProps {
 const QUEST_ITEM_IDS = new Set([
   3865, 3866, 3867, 3869, 3870, 3871, 3876, 3877,
   3850, 3851, 3853, 3854, 3855, 3857, 3858, 3859, 3860, 3862, 3863, 3864,
-  1101, 1102, 1103,
-  3070, 3004, 3003, 3119,
+  1101, 1102, 1103, // Jungle Pet starter items
 ]);
 
 // Trinket Item IDs
-const TRINKET_ITEM_IDS = new Set([3340, 3364, 3363]);
+const TRINKET_ITEM_IDS = new Set([
+  3340, 3364, 3363, 2055, // Stealth Ward, Oracle Lens, Farsight Alteration, Control Ward
+]);
 
-// Keystone Acronyms for compact tabular display
+// Main Keystone Rune Acronyms
 const KEYSTONE_ACRONYMS: Record<string, string> = {
+  "Press the Attack": "PTA",
   "Lethal Tempo": "LT",
-  "First Strike": "FS",
-  "Dark Harvest": "DH",
+  "Fleet Footwork": "FFW",
   "Conqueror": "CONQ",
   "Electrocute": "ELEC",
+  "Predator": "PRED",
+  "Dark Harvest": "DH",
   "Hail of Blades": "HOB",
   "Summon Aery": "AERY",
   "Arcane Comet": "COMET",
   "Phase Rush": "PR",
   "Grasp of the Undying": "GRASP",
   "Aftershock": "AFTER",
-  "Fleet Footwork": "FLEET",
-  "Press the Attack": "PTA",
+  "Guardian": "GUARD",
   "Glacial Augment": "GLACIAL",
+  "First Strike": "FS",
 };
 
-const POSITION_ORDER = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"];
+const POSITION_ORDER = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"] as const;
 const POSITION_SHORT_LABELS: Record<string, string> = {
   TOP: "TOP",
   JUNGLE: "JGL",
@@ -66,10 +76,34 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
   isMockActive,
   onToggleMock,
 }) => {
+  // Live Screen Recorder State
+  const [recorderState, setRecorderState] = useState<"idle" | "recording" | "paused">("idle");
+  const [recordedSec, setRecordedSec] = useState<number>(0);
+
+  useEffect(() => {
+    const unsubState = screenRecorder.onStateChange((st) => setRecorderState(st));
+    const unsubDuration = screenRecorder.onDurationUpdate((sec) => setRecordedSec(sec));
+    return () => {
+      unsubState();
+      unsubDuration();
+    };
+  }, []);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
+  const handleStopRecording = async () => {
+    try {
+      const { blob, durationSec } = await screenRecorder.stop();
+      const dateStr = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const fileName = `LoL_Game_${dateStr}.webm`;
+      await saveRecordingLocally(blob, fileName, durationSec);
+    } catch (e: any) {
+      console.warn("Failed to save VOD:", e);
+    }
   };
 
   if (!liveState.isActive || !liveState.data) {
@@ -97,7 +131,7 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
 
           <button
             onClick={onToggleMock}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase tracking-wider border transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono font-bold uppercase tracking-wider border transition-all cursor-pointer ${
               isMockActive
                 ? "bg-riot-red text-white border-riot-red shadow-sm"
                 : "bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-neutral-400 dark:hover:border-neutral-600"
@@ -276,8 +310,103 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
   const totalTeamGoldSum = Math.max(1, blueTotalGold + redTotalGold);
   const blueGoldSharePercent = Math.round((blueTotalGold / totalTeamGoldSum) * 100);
 
+  // ====================================================================
+  // SMART MATCHUP BUILDER: NO DUPLICATE PLAYERS ACROSS ROWS!
+  // ====================================================================
+  const matchups = useMemo(() => {
+    // 1. Check if standard 5v5 with assigned lanes (Ranked / Normal Draft)
+    const hasAssignedLanes =
+      blueTeam.length >= 4 &&
+      redTeam.length >= 4 &&
+      POSITION_ORDER.every((pos) => blueTeam.some((p) => p.position === pos));
+
+    if (hasAssignedLanes) {
+      return POSITION_ORDER.map((pos) => ({
+        pos,
+        label: POSITION_SHORT_LABELS[pos] || pos,
+        bluePlayer: blueTeam.find((p) => p.position === pos) || null,
+        redPlayer: redTeam.find((p) => p.position === pos) || null,
+      }));
+    }
+
+    // 2. Practice Tool, Custom, 1v1, Bots, ARAM, or Arena:
+    // Pair each unique player by index 1-to-1 so no player is duplicated!
+    const rowCount = Math.max(blueTeam.length, redTeam.length, 1);
+    const rows = [];
+    for (let i = 0; i < rowCount; i++) {
+      const posKey = POSITION_ORDER[i] || `SLOT ${i + 1}`;
+      rows.push({
+        pos: posKey,
+        label: POSITION_SHORT_LABELS[posKey] || (rowCount === 1 ? "SOLO" : `P${i + 1}`),
+        bluePlayer: blueTeam[i] || null,
+        redPlayer: redTeam[i] || null,
+      });
+    }
+    return rows;
+  }, [blueTeam, redTeam]);
+
   return (
     <div className="border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0c0e14] rounded shadow-sm overflow-hidden">
+      {/* ========================================================= */}
+      {/* 0. MATCH RECORDER QUICK BAR                               */}
+      {/* ========================================================= */}
+      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100/90 dark:bg-[#131620] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs font-mono select-none">
+        <div className="flex items-center gap-2.5">
+          <div
+            className={`w-3 h-3 rounded-full ${
+              recorderState === "recording"
+                ? "bg-riot-red animate-pulse ring-4 ring-riot-red/20"
+                : "bg-emerald-500"
+            }`}
+          />
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-neutral-900 dark:text-neutral-100 uppercase tracking-wider text-xs">
+                {recorderState === "recording"
+                  ? `AUTOMATIC VOD RECORDING IN PROGRESS (${formatTime(recordedSec)})`
+                  : "AUTOMATED GAME DETECTION & VOD RECORDER READY"}
+              </span>
+              <span
+                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm ${
+                  recorderState === "recording"
+                    ? "bg-riot-red text-white"
+                    : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                }`}
+              >
+                {recorderState === "recording" ? "LIVE CAPTURE" : "AUTO-PILOT ACTIVE"}
+              </span>
+            </div>
+            <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5">
+              {recorderState === "recording"
+                ? "Capturing game stream silently in background • Will auto-save when match ends"
+                : "Silent background recording triggers on match start and auto-saves to Videos/LeagueStatTracker"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {recorderState === "recording" && (
+            <button
+              onClick={handleStopRecording}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-xs uppercase cursor-pointer transition-all shadow-sm"
+              title="Stop and save early"
+            >
+              <Square className="w-3.5 h-3.5 fill-current" />
+              <span>Save & Stop Early</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => openRecordingsFolder()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-neutral-200 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 hover:border-riot-red border border-transparent text-xs font-bold cursor-pointer"
+            title="Open recordings folder in Windows Explorer"
+          >
+            <FolderOpen className="w-3.5 h-3.5" />
+            <span>Open VOD Folder</span>
+          </button>
+        </div>
+      </div>
+
       {/* ========================================================= */}
       {/* 1. FINANCIAL ANALYTICS HEADER STRIP                       */}
       {/* ========================================================= */}
@@ -360,7 +489,7 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
           {isMockActive && (
             <button
               onClick={onToggleMock}
-              className="ml-2 flex items-center gap-1 px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-[10px] font-mono font-bold hover:bg-riot-red hover:text-white transition-all"
+              className="ml-2 flex items-center gap-1 px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-[10px] font-mono font-bold hover:bg-riot-red hover:text-white transition-all cursor-pointer"
               title="Stop Simulation"
             >
               <StopCircle className="w-3 h-3" />
@@ -381,21 +510,16 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
           <div className="flex-1 text-right">Chaos Roster & Equipment</div>
         </div>
 
-        {POSITION_ORDER.map((pos) => {
-          const bluePlayer = blueTeam.find((p) => p.position === pos) || blueTeam[0];
-          const redPlayer = redTeam.find((p) => p.position === pos) || redTeam[0];
-
-          if (!bluePlayer || !redPlayer) return null;
-
-          const isUserBlue = bluePlayer.summonerName === activePlayer.summonerName;
-          const isUserRed = redPlayer.summonerName === activePlayer.summonerName;
+        {matchups.map(({ pos, label, bluePlayer, redPlayer }) => {
+          const isUserBlue = bluePlayer?.summonerName === activePlayer.summonerName;
+          const isUserRed = redPlayer?.summonerName === activePlayer.summonerName;
           const isUserLane = isUserBlue || isUserRed;
 
-          const bGold = calculatePlayerGold(bluePlayer);
-          const rGold = calculatePlayerGold(redPlayer);
+          const bGold = bluePlayer ? calculatePlayerGold(bluePlayer) : 0;
+          const rGold = redPlayer ? calculatePlayerGold(redPlayer) : 0;
           const gDiff = bGold - rGold;
-          const lDiff = bluePlayer.level - redPlayer.level;
-          const csDiff = (bluePlayer.scores?.creepScore || 0) - (redPlayer.scores?.creepScore || 0);
+          const lDiff = (bluePlayer?.level || 0) - (redPlayer?.level || 0);
+          const csDiff = (bluePlayer?.scores?.creepScore || 0) - (redPlayer?.scores?.creepScore || 0);
 
           return (
             <div
@@ -408,123 +532,149 @@ export const LiveGameCard: React.FC<LiveGameCardProps> = ({
             >
               {/* ================= BLUE PLAYER (LEFT) ================= */}
               <div className="flex items-center justify-between flex-1 gap-2">
-                {/* Avatar & Ident */}
-                <div className="flex items-center gap-2.5">
-                  <div className="relative w-8 h-8 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 shrink-0 bg-neutral-900">
-                    <img
-                      src={getChampionIconUrl(bluePlayer.championName)}
-                      alt={bluePlayer.championName}
-                      className={`w-full h-full object-cover ${bluePlayer.isDead ? "grayscale opacity-60" : ""}`}
-                    />
-                    <span className="absolute bottom-0 right-0 bg-neutral-950 text-[8px] font-mono font-bold px-0.5 text-neutral-200">
-                      {bluePlayer.level}
-                    </span>
-                    {bluePlayer.isDead && (
-                      <div className="absolute inset-0 bg-neutral-950/80 flex items-center justify-center text-[8px] font-mono font-black text-riot-red">
-                        {bluePlayer.respawnTimer}s
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
-                        {bluePlayer.championName}
-                      </span>
-                      {isUserBlue && (
-                        <span className="text-[8px] px-1 py-0.2 rounded-sm bg-riot-red text-white font-mono font-bold">
-                          YOU
+                {bluePlayer ? (
+                  <>
+                    {/* Avatar & Ident */}
+                    <div className="flex items-center gap-2.5">
+                      <div className="relative w-8 h-8 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 shrink-0 bg-neutral-900">
+                        <img
+                          src={getChampionIconUrl(bluePlayer.championName)}
+                          alt={bluePlayer.championName}
+                          className={`w-full h-full object-cover ${bluePlayer.isDead ? "grayscale opacity-60" : ""}`}
+                        />
+                        <span className="absolute bottom-0 right-0 bg-neutral-950 text-[8px] font-mono font-bold px-0.5 text-neutral-200">
+                          {bluePlayer.level}
                         </span>
-                      )}
-                    </div>
-                    <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 tabular-nums">
-                      {bluePlayer.scores.kills}/{bluePlayer.scores.deaths}/{bluePlayer.scores.assists} • {bluePlayer.scores.creepScore}cs • <strong className="text-neutral-900 dark:text-neutral-200">{bGold.toLocaleString()}g</strong>
-                    </div>
-                  </div>
-                </div>
+                        {bluePlayer.isDead && (
+                          <div className="absolute inset-0 bg-neutral-950/80 flex items-center justify-center text-[8px] font-mono font-black text-riot-red">
+                            {bluePlayer.respawnTimer}s
+                          </div>
+                        )}
+                      </div>
 
-                {/* Keystone & Items */}
-                <div className="flex items-center gap-1.5">
-                  {renderRuneBadges(bluePlayer)}
-                  {renderItemBar(bluePlayer)}
-                </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                            {bluePlayer.championName}
+                          </span>
+                          {isUserBlue && (
+                            <span className="text-[8px] px-1 py-0.2 rounded-sm bg-riot-red text-white font-mono font-bold">
+                              YOU
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 tabular-nums">
+                          {bluePlayer.scores.kills}/{bluePlayer.scores.deaths}/{bluePlayer.scores.assists} • {bluePlayer.scores.creepScore}cs • <strong className="text-neutral-900 dark:text-neutral-200">{bGold.toLocaleString()}g</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Keystone & Items */}
+                    <div className="flex items-center gap-1.5">
+                      {renderRuneBadges(bluePlayer)}
+                      {renderItemBar(bluePlayer)}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center text-neutral-400 text-xs font-mono italic">
+                    [Empty Roster Slot]
+                  </div>
+                )}
               </div>
 
               {/* ================= CENTER DELTA TICKER ================= */}
               <div className="flex flex-col items-center justify-center shrink-0 w-24 py-0.5 font-mono select-none">
                 <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded-sm bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
-                  {POSITION_SHORT_LABELS[pos] || pos}
+                  {label}
                 </span>
 
                 {/* Gold Delta Pill */}
                 <div className="text-[10px] font-bold mt-1 tabular-nums">
-                  {gDiff > 0 ? (
-                    <span className="text-emerald-600 dark:text-emerald-400">
-                      ▲ +{gDiff.toLocaleString()}g
-                    </span>
-                  ) : gDiff < 0 ? (
-                    <span className="text-riot-red">
-                      ▼ -{Math.abs(gDiff).toLocaleString()}g
-                    </span>
+                  {bluePlayer && redPlayer ? (
+                    gDiff > 0 ? (
+                      <span className="text-emerald-600 dark:text-emerald-400">
+                        ▲ +{gDiff.toLocaleString()}g
+                      </span>
+                    ) : gDiff < 0 ? (
+                      <span className="text-riot-red">
+                        ▼ -{Math.abs(gDiff).toLocaleString()}g
+                      </span>
+                    ) : (
+                      <span className="text-neutral-400">0g</span>
+                    )
+                  ) : bluePlayer ? (
+                    <span className="text-neutral-400">{bGold.toLocaleString()}g</span>
+                  ) : redPlayer ? (
+                    <span className="text-neutral-400">{rGold.toLocaleString()}g</span>
                   ) : (
-                    <span className="text-neutral-400">0g</span>
+                    <span className="text-neutral-400">-</span>
                   )}
                 </div>
 
                 {/* Level & CS Delta */}
-                <div className="text-[9px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1 mt-0.5 tabular-nums">
-                  <span>
-                    {lDiff > 0 ? `+${lDiff}L` : lDiff < 0 ? `${lDiff}L` : "0L"}
-                  </span>
-                  <span>•</span>
-                  <span>
-                    {csDiff > 0 ? `+${csDiff}cs` : csDiff < 0 ? `${csDiff}cs` : "0cs"}
-                  </span>
-                </div>
+                {bluePlayer && redPlayer && (
+                  <div className="text-[9px] text-neutral-500 dark:text-neutral-400 flex items-center gap-1 mt-0.5 tabular-nums">
+                    <span>
+                      {lDiff > 0 ? `+${lDiff}L` : lDiff < 0 ? `${lDiff}L` : "0L"}
+                    </span>
+                    <span>•</span>
+                    <span>
+                      {csDiff > 0 ? `+${csDiff}cs` : csDiff < 0 ? `${csDiff}cs` : "0cs"}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* ================= RED PLAYER (RIGHT) ================= */}
               <div className="flex items-center justify-between flex-1 gap-2 flex-row-reverse text-right">
-                {/* Avatar & Ident */}
-                <div className="flex items-center gap-2.5 flex-row-reverse text-right">
-                  <div className="relative w-8 h-8 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 shrink-0 bg-neutral-900">
-                    <img
-                      src={getChampionIconUrl(redPlayer.championName)}
-                      alt={redPlayer.championName}
-                      className={`w-full h-full object-cover ${redPlayer.isDead ? "grayscale opacity-60" : ""}`}
-                    />
-                    <span className="absolute bottom-0 left-0 bg-neutral-950 text-[8px] font-mono font-bold px-0.5 text-neutral-200">
-                      {redPlayer.level}
-                    </span>
-                    {redPlayer.isDead && (
-                      <div className="absolute inset-0 bg-neutral-950/80 flex items-center justify-center text-[8px] font-mono font-black text-riot-red">
-                        {redPlayer.respawnTimer}s
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-end gap-1.5">
-                      {isUserRed && (
-                        <span className="text-[8px] px-1 py-0.2 rounded-sm bg-riot-red text-white font-mono font-bold">
-                          YOU
+                {redPlayer ? (
+                  <>
+                    {/* Avatar & Ident */}
+                    <div className="flex items-center gap-2.5 flex-row-reverse text-right">
+                      <div className="relative w-8 h-8 rounded-sm overflow-hidden border border-neutral-300 dark:border-neutral-700 shrink-0 bg-neutral-900">
+                        <img
+                          src={getChampionIconUrl(redPlayer.championName)}
+                          alt={redPlayer.championName}
+                          className={`w-full h-full object-cover ${redPlayer.isDead ? "grayscale opacity-60" : ""}`}
+                        />
+                        <span className="absolute bottom-0 left-0 bg-neutral-950 text-[8px] font-mono font-bold px-0.5 text-neutral-200">
+                          {redPlayer.level}
                         </span>
-                      )}
-                      <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
-                        {redPlayer.championName}
-                      </span>
-                    </div>
-                    <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 tabular-nums">
-                      <strong className="text-neutral-900 dark:text-neutral-200">{rGold.toLocaleString()}g</strong> • {redPlayer.scores.creepScore}cs • {redPlayer.scores.kills}/{redPlayer.scores.deaths}/{redPlayer.scores.assists}
-                    </div>
-                  </div>
-                </div>
+                        {redPlayer.isDead && (
+                          <div className="absolute inset-0 bg-neutral-950/80 flex items-center justify-center text-[8px] font-mono font-black text-riot-red">
+                            {redPlayer.respawnTimer}s
+                          </div>
+                        )}
+                      </div>
 
-                {/* Keystone & Items */}
-                <div className="flex items-center gap-1.5 flex-row-reverse">
-                  {renderRuneBadges(redPlayer)}
-                  {renderItemBar(redPlayer)}
-                </div>
+                      <div>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {isUserRed && (
+                            <span className="text-[8px] px-1 py-0.2 rounded-sm bg-riot-red text-white font-mono font-bold">
+                              YOU
+                            </span>
+                          )}
+                          <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                            {redPlayer.championName}
+                          </span>
+                        </div>
+                        <div className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 tabular-nums">
+                          <strong className="text-neutral-900 dark:text-neutral-200">{rGold.toLocaleString()}g</strong> • {redPlayer.scores.creepScore}cs • {redPlayer.scores.kills}/{redPlayer.scores.deaths}/{redPlayer.scores.assists}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Keystone & Items */}
+                    <div className="flex items-center gap-1.5 flex-row-reverse">
+                      {renderRuneBadges(redPlayer)}
+                      {renderItemBar(redPlayer)}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-end text-neutral-400 text-xs font-mono italic">
+                    [No Opponent Assigned]
+                  </div>
+                )}
               </div>
             </div>
           );

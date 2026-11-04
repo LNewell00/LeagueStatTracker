@@ -121,6 +121,55 @@ pub fn open_recordings_folder() -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn highlight_file_in_explorer(file_path: String) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer")
+            .args(["/select,", &file_path])
+            .spawn()
+            .map_err(|e| format!("Failed to open explorer: {}", e))?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .args(["-R", &file_path])
+            .spawn()
+            .map_err(|e| format!("Failed to open finder: {}", e))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn launch_rofl_replay(replay_path: String) -> Result<(), String> {
+    let possible_exes = [
+        PathBuf::from(r"C:\Riot Games\League of Legends\Game\League of Legends.exe"),
+        PathBuf::from(r"D:\Riot Games\League of Legends\Game\League of Legends.exe"),
+    ];
+
+    let found_exe = possible_exes.iter().find(|p| p.exists());
+    if let Some(game_exe) = found_exe {
+        Command::new(game_exe)
+            .arg(&replay_path)
+            .spawn()
+            .map_err(|e| format!("Failed to launch League of Legends replay: {}", e))?;
+        Ok(())
+    } else {
+        #[cfg(target_os = "windows")]
+        {
+            Command::new("cmd")
+                .args(["/c", "start", "", &replay_path])
+                .spawn()
+                .map_err(|e| format!("Could not open replay file: {}", e))?;
+            Ok(())
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            Err("League of Legends client executable not found.".to_string())
+        }
+    }
+}
+
+#[tauri::command]
 pub fn scan_rofl_replays() -> Result<Vec<RoflReplayMeta>, String> {
     let mut results = Vec::new();
     let base = std::env::var("USERPROFILE")
@@ -158,5 +207,78 @@ pub fn scan_rofl_replays() -> Result<Vec<RoflReplayMeta>, String> {
 
     results.sort_by(|a, b| b.modified_at.cmp(&a.modified_at));
     Ok(results)
+}
+
+fn get_debug_log_path() -> PathBuf {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            let log_file = parent.join("debug_recording.log");
+            return log_file;
+        }
+    }
+    std::env::temp_dir().join("league_stat_tracker_debug.log")
+}
+
+#[tauri::command]
+pub fn append_debug_log(entry: String) -> Result<(), String> {
+    use std::fs::OpenOptions;
+    use std::io::Write;
+
+    let now_ms = std::time::SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+
+    let line = format!("[+{}] {}\n", now_ms, entry);
+
+    let log_path = get_debug_log_path();
+    if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(&log_path) {
+        let _ = f.write_all(line.as_bytes());
+    }
+
+    // Also mirror to %TEMP%/league_stat_tracker_debug.log
+    let temp_log = std::env::temp_dir().join("league_stat_tracker_debug.log");
+    if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(&temp_log) {
+        let _ = f.write_all(line.as_bytes());
+    }
+
+    // Also write to project working dir if exists
+    let cwd_log = PathBuf::from("debug_recording.log");
+    let _ = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&cwd_log)
+        .and_then(|mut f| f.write_all(line.as_bytes()));
+
+    println!("[APP_LOG] {}", entry);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_debug_log_content() -> Result<String, String> {
+    let log_path = get_debug_log_path();
+    if log_path.exists() {
+        fs::read_to_string(&log_path).map_err(|e| format!("Failed to read debug log: {}", e))
+    } else {
+        let temp_log = std::env::temp_dir().join("league_stat_tracker_debug.log");
+        if temp_log.exists() {
+            fs::read_to_string(&temp_log).map_err(|e| format!("Failed to read temp debug log: {}", e))
+        } else {
+            Ok("No log entries recorded yet.".to_string())
+        }
+    }
+}
+
+#[tauri::command]
+pub fn open_debug_log_file() -> Result<(), String> {
+    let log_path = get_debug_log_path();
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("notepad.exe")
+            .arg(log_path.to_string_lossy().as_ref())
+            .spawn()
+            .map_err(|e| format!("Failed to open notepad: {}", e))?;
+    }
+    Ok(())
 }
 

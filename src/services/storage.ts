@@ -70,6 +70,8 @@ export interface AppPreferences {
   useMockOnEmpty: boolean;
   matchCount?: number;
   theme?: "dark" | "light";
+  enableVodRecording?: boolean;
+  hasCompletedOnboarding?: boolean;
 }
 
 const PREFS_KEY = "league_tracker_prefs";
@@ -110,6 +112,8 @@ export function loadPreferences(): AppPreferences {
         ...parsed,
         matchCount: parsed.matchCount || 20,
         theme: parsed.theme || "dark",
+        enableVodRecording: parsed.enableVodRecording !== undefined ? parsed.enableVodRecording : true,
+        hasCompletedOnboarding: Boolean(parsed.hasCompletedOnboarding),
       };
     }
   } catch {
@@ -124,6 +128,8 @@ export function loadPreferences(): AppPreferences {
     useMockOnEmpty: true,
     matchCount: 20,
     theme: "dark",
+    enableVodRecording: true,
+    hasCompletedOnboarding: false,
   };
 }
 
@@ -134,4 +140,3 @@ export function savePreferences(prefs: AppPreferences): void {
     console.error("Failed to save preferences:", e);
   }
 }
-

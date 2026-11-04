@@ -1,6 +1,7 @@
 import { LiveGameData, LivePollerState } from "../types/live";
 import { isTauriEnvironment } from "./storage";
 import { MOCK_LIVE_GAME } from "./mockData";
+import { logger } from "./logger";
 
 type LiveClientListener = (state: LivePollerState) => void;
 
@@ -77,6 +78,8 @@ class LiveClientPoller {
     this.currentState.isLoading = true;
     this.notify();
 
+    const wasActive = this.currentState.isActive;
+
     try {
       if (isTauriEnvironment()) {
         const { invoke } = await import("@tauri-apps/api/core");
@@ -88,6 +91,9 @@ class LiveClientPoller {
           data,
           error: null,
         };
+        if (!wasActive) {
+          logger.log("success", "LiveClient", `Match detected on port 2999! Mode: ${data?.gameData?.gameMode || "LoL"} (time: ${Math.floor(data?.gameData?.gameTime || 0)}s)`);
+        }
       } else {
         // Direct browser fetch (will fail on CORS/self-signed cert unless proxy/Tauri is used)
         const res = await fetch("https://127.0.0.1:2999/liveclientdata/allgamedata", {
@@ -102,8 +108,14 @@ class LiveClientPoller {
           data,
           error: null,
         };
+        if (!wasActive) {
+          logger.log("success", "LiveClient", `Match detected on port 2999! Mode: ${data?.gameData?.gameMode || "LoL"}`);
+        }
       }
     } catch (err: any) {
+      if (wasActive) {
+        logger.log("info", "LiveClient", "Match ended or League client closed.");
+      }
       this.currentState = {
         isActive: false,
         isLoading: false,

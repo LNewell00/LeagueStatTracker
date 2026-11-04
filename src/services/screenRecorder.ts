@@ -1,4 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
+import { logger } from "./logger";
+import { isTauriEnvironment } from "./storage";
 
 export interface RecordingMeta {
   name: string;
@@ -88,6 +90,8 @@ class ScreenRecorderService {
   private timerInterval: any = null;
   private stateChangeCallbacks: ((state: "idle" | "recording" | "paused") => void)[] = [];
   private durationCallbacks: ((seconds: number) => void)[] = [];
+  private isNativeMode: boolean = false;
+  private nativePath: string | null = null;
 
   public isRecordingActive: boolean = false;
   public isRecordingPaused: boolean = false;
@@ -119,33 +123,98 @@ class ScreenRecorderService {
    * Start lightweight screen / game window recording
    */
   public async start(quality: QualityPreset = "720p", includeMic: boolean = false): Promise<void> {
-    if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") {
+    if (this.isRecordingActive || (this.mediaRecorder && this.mediaRecorder.state !== "inactive")) {
       throw new Error("Recording is already in progress.");
     }
 
+    // 0. PRIMARY: Native Windows Graphics Capture (Zero Prompts, Zero Dialogs)
+    if (isTauriEnvironment()) {
+      try {
+        logger.log("info", "ScreenRecorder", "Initiating Native Windows Graphics Capture for 'League of Legends (TM) Client'...");
+        const path = await invoke<string>("start_native_game_recording");
+        this.isNativeMode = true;
+        this.nativePath = path;
+        this.isRecordingActive = true;
+        this.isRecordingPaused = false;
+        this.recordedSeconds = 0;
+
+        clearInterval(this.timerInterval);
+        this.timerInterval = setInterval(() => {
+          if (!this.isRecordingPaused) {
+            this.recordedSeconds++;
+            this.emitDuration(this.recordedSeconds);
+          }
+        }, 1000);
+
+        this.emitState("recording");
+        logger.log("success", "ScreenRecorder", `Native Windows Graphics Capture attached to League! Recording to: ${path}`);
+        return;
+      } catch (nativeErr: any) {
+        logger.log("warn", "ScreenRecorder", `Native capture initiation failed (${nativeErr?.message || nativeErr}), falling back to web capture...`);
+      }
+    }
+
     const videoConstraints: MediaTrackConstraints = {
-      displaySurface: "window", // Prefer game window
+      frameRate: quality === "1080p60" ? { ideal: 60, max: 60 } : { ideal: 30, max: 30 },
     };
 
     if (quality === "720p") {
-      videoConstraints.width = { ideal: 1280, max: 1280 };
-      videoConstraints.height = { ideal: 720, max: 720 };
-      videoConstraints.frameRate = { ideal: 30, max: 30 };
-    } else if (quality === "1080p") {
-      videoConstraints.width = { ideal: 1920, max: 1920 };
-      videoConstraints.height = { ideal: 1080, max: 1080 };
-      videoConstraints.frameRate = { ideal: 30, max: 30 };
-    } else {
-      videoConstraints.width = { ideal: 1920, max: 1920 };
-      videoConstraints.height = { ideal: 1080, max: 1080 };
-      videoConstraints.frameRate = { ideal: 60, max: 60 };
+      videoConstraints.width = { ideal: 1280 };
+      videoConstraints.height = { ideal: 720 };
+    } else if (quality === "1080p" || quality === "1080p60") {
+      videoConstraints.width = { ideal: 1920 };
+      videoConstraints.height = { ideal: 1080 };
     }
 
-    // 1. Get Display / Window stream
-    const displayStream = await navigator.mediaDevices.getDisplayMedia({
-      video: videoConstraints,
-      audio: true, // Capture in-game sound
-    });
+    logger.log("info", "ScreenRecorder", `start() called (preset: ${quality}, includeMic: ${includeMic})`);
+
+    if (!navigator?.mediaDevices?.getDisplayMedia) {
+      const err = new Error("navigator.mediaDevices.getDisplayMedia is not available in this browser/WebView2 instance.");
+      logger.log("error", "ScreenRecorder", err.message);
+      throw err;
+    }
+
+    // 1. Get Display / Window stream via 3-Tier Fallback Cascade
+    let displayStream: MediaStream;
+    try {
+      logger.log("info", "ScreenRecorder", "Attempting Level 1 capture (resolution/framerate + audio)...");
+      displayStream = await navigator.mediaDevices.getDisplayMedia({
+        video: videoConstraints,
+        audio: true, // Capture in-game sound
+      });
+      logger.log("success", "ScreenRecorder", "Level 1 display stream acquired with audio!", {
+        tracks: displayStream.getTracks().map((t) => `${t.kind}: ${t.label}`),
+      });
+    } catch (e1: any) {
+      logger.log("warn", "ScreenRecorder", `Level 1 failed (${e1?.name}: ${e1?.message}), trying Level 2 (video-only with framerate)...`);
+      try {
+        displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { frameRate: { ideal: 30, max: 60 } },
+          audio: false,
+        });
+        logger.log("success", "ScreenRecorder", "Level 2 display stream acquired (video only)!", {
+          tracks: displayStream.getTracks().map((t) => `${t.kind}: ${t.label}`),
+        });
+      } catch (e2: any) {
+        logger.log("warn", "ScreenRecorder", `Level 2 failed (${e2?.name}: ${e2?.message}), trying Level 3 universal fallback (video: true)...`);
+        try {
+          displayStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: false,
+          });
+          logger.log("success", "ScreenRecorder", "Level 3 display stream acquired (universal video: true)!", {
+            tracks: displayStream.getTracks().map((t) => `${t.kind}: ${t.label}`),
+          });
+        } catch (e3: any) {
+          logger.log("error", "ScreenRecorder", `FATAL: All capture levels failed: [${e3?.name}] ${e3?.message}`, {
+            name: e3?.name,
+            message: e3?.message,
+            stack: e3?.stack,
+          });
+          throw e3;
+        }
+      }
+    }
 
     let combinedStream = displayStream;
 
@@ -247,7 +316,30 @@ class ScreenRecorderService {
   /**
    * Stop recording and return final video Blob and metadata
    */
-  public async stop(): Promise<{ blob: Blob; durationSec: number; mimeType: string }> {
+  public async stop(): Promise<{ blob: Blob; durationSec: number; mimeType: string; path?: string }> {
+    if (this.isNativeMode) {
+      clearInterval(this.timerInterval);
+      const durationSec = Math.max(1, this.recordedSeconds);
+      let savedPath = this.nativePath || "";
+      try {
+        savedPath = await invoke<string>("stop_native_game_recording");
+        logger.log("success", "ScreenRecorder", `Native recording stopped & saved to: ${savedPath} (${durationSec}s)`);
+      } catch (e: any) {
+        logger.log("error", "ScreenRecorder", `Failed stopping native recording: ${e?.message}`);
+      }
+      this.isNativeMode = false;
+      this.nativePath = null;
+      this.isRecordingActive = false;
+      this.isRecordingPaused = false;
+      this.emitState("idle");
+      return {
+        blob: new Blob([], { type: "video/mp4" }),
+        durationSec,
+        mimeType: "video/mp4",
+        path: savedPath,
+      };
+    }
+
     return new Promise((resolve, reject) => {
       if (!this.mediaRecorder) {
         return reject(new Error("No active recording found."));
@@ -294,6 +386,7 @@ export async function saveRecordingLocally(
   fileName: string,
   durationSec: number
 ): Promise<{ path?: string; id: string }> {
+  logger.log("info", "ScreenRecorder", `saveRecordingLocally starting for ${fileName} (${blob.size} bytes, ${durationSec}s)`);
   const id = `vod_${Date.now()}`;
   await storeVodBlob(id, blob, { name: fileName, duration: durationSec });
 
@@ -304,9 +397,10 @@ export async function saveRecordingLocally(
       fileName,
       videoBytes: bytes,
     });
+    logger.log("success", "ScreenRecorder", `Video successfully written to disk: ${savedPath}`);
     return { path: savedPath, id };
-  } catch (err) {
-    console.warn("Tauri file save not available or failed; saved in local storage:", err);
+  } catch (err: any) {
+    logger.log("error", "ScreenRecorder", `Tauri save_recording_file failed: ${err?.message || err}`, err);
     return { id };
   }
 }
@@ -341,4 +435,32 @@ export async function fetchRoflReplays(): Promise<RoflReplayMeta[]> {
   } catch {
     return [];
   }
+}
+
+export async function launchRoflReplay(replayPath: string): Promise<void> {
+  try {
+    await invoke("launch_rofl_replay", { replayPath });
+  } catch (e) {
+    console.error("Failed to launch ROFL replay:", e);
+    throw e;
+  }
+}
+
+export async function highlightFileInExplorer(filePath: string): Promise<void> {
+  try {
+    await invoke("highlight_file_in_explorer", { filePath });
+  } catch (e) {
+    console.error("Failed to highlight file in explorer:", e);
+  }
+}
+
+export function downloadVodFile(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
