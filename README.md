@@ -1,146 +1,120 @@
-# League Stat Tracker (Tauri v2 + React + TypeScript + Tailwind CSS)
+# 🏆 League Stat Tracker
 
-A sleek, native desktop League of Legends tracker inspired by Blitz.gg and U.gg, engineered with **Tauri v2**, **React 18**, **TypeScript**, and **Tailwind CSS**.
+[![Release](https://img.shields.io/github/v/release/LNewell00/LeagueStatTracker?color=E84057&label=Release&style=flat-square)](https://github.com/LNewell00/LeagueStatTracker/releases/latest)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078D6?style=flat-square&logo=windows)](https://github.com/LNewell00/LeagueStatTracker/releases/latest)
+[![Tauri](https://img.shields.io/badge/Tauri-v2-FFC131?style=flat-square&logo=tauri)](https://tauri.app/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react)](https://react.dev/)
+[![License](https://img.shields.io/badge/License-MIT-gray?style=flat-square)](LICENSE)
 
----
+A high-performance, lightweight desktop companion for **League of Legends**, built from the ground up with **Tauri v2**, **Rust**, **React 18**, **TypeScript**, and **Tailwind CSS**.
 
-## 🚀 Features
-
-- **Summary Header**: Dynamic win rate gauge, total games counter, and average KDA ratio with top champions showcase.
-- **Riot API Match-V5 Service**: Resolves Riot ID (e.g. `Faker#KR1`) into PUUID, then fetches match history (KDA, Champion played, CS, Win/Loss, Items, Damage, Vision Score).
-- **Live Client Poller**: Connects to the local League of Legends game client (`https://127.0.0.1:2999/liveclientdata/allgamedata`) during an active match with native TLS self-signed cert bypass in Rust.
-- **Local Caching**: Stores parsed match history in a local JSON cache to prevent hitting Riot API rate limits (100 req/2 min).
-- **Dark-Mode Gaming UI**: Dark zinc/slate aesthetic with Hextech cyan accents and neon emerald/rose win-loss badges.
-- **Built-in Mock Fallback**: Includes demo matches and live game simulation so you can explore the UI immediately before setting up your Riot API key.
+Unlike memory-heavy web overlays, League Stat Tracker is engineered to remain fast, unobtrusive, and gentle on your CPU and GPU while delivering real-time match radar, automated zero-click VOD recording, and deep post-game analytics.
 
 ---
 
-## 📁 Project Structure
+## ✨ Features (v0.2.0)
 
-```text
-LeagueStatTracker/
-├── src-tauri/                       # Native Rust Backend (Tauri v2)
-│   ├── capabilities/
-│   │   └── default.json             # Tauri security capabilities & permissions
-│   ├── src/
-│   │   ├── commands/
-│   │   │   ├── mod.rs
-│   │   │   ├── riot_api.rs          # Riot API endpoints (Account-v1 & Match-v5)
-│   │   │   ├── live_client.rs       # Insecure TLS local client poller (127.0.0.1:2999)
-│   │   │   └── storage.rs           # Local JSON match cache read/write
-│   │   ├── lib.rs                   # Tauri handler registration & plugin setup
-│   │   └── main.rs                  # Native executable entry point
-│   ├── Cargo.toml                   # Rust dependencies (reqwest, serde, tauri v2)
-│   ├── tauri.conf.json              # Tauri v2 window and build settings
-│   └── build.rs                     # Tauri build script
-├── src/                             # Frontend (React + Vite + TypeScript)
-│   ├── components/
-│   │   ├── Header.tsx               # Riot ID search, region selector & client status
-│   │   ├── StatsOverview.tsx        # Win rate ring, total games, avg KDA & top champs
-│   │   ├── LiveGameCard.tsx         # Active game radar & live in-match stats card
-│   │   ├── MatchHistoryTable.tsx    # Filterable scrollable match list
-│   │   ├── MatchRow.tsx             # Single match row with Data Dragon icons & neon badges
-│   │   └── SettingsModal.tsx        # API key & cache settings modal
-│   ├── services/
-│   │   ├── ddragon.ts               # Riot Data Dragon CDN URLs (items, champions, spells)
-│   │   ├── liveClient.ts            # Live client poller subscription service
-│   │   ├── mockData.ts              # Authentic demo matches for instant preview
-│   │   ├── riotApi.ts               # Frontend API client & stat computation logic
-│   │   └── storage.ts               # Cache & local storage bridge
-│   ├── types/
-│   │   ├── live.ts                  # Live Client Data API schema
-│   │   └── riot.ts                  # Match-V5 and Account-V1 schemas
-│   ├── App.tsx                      # Main application orchestrator
-│   ├── index.css                    # Tailwind directives & custom neon scrollbars
-│   └── main.tsx                     # React DOM entry point
-├── .env.example                     # Environment variables template
-├── index.html                       # HTML shell
-├── package.json                     # Node dependencies & scripts
-├── postcss.config.js                # PostCSS configuration
-├── tailwind.config.js               # Gaming palette & neon shadow configuration
-├── tsconfig.json                    # TypeScript compiler configuration
-└── vite.config.ts                   # Vite bundler tailored for Tauri
+### 🎥 Automated Native Match Recording Studio
+- **Zero-Prompt Capture**: Uses the native Windows Graphics Capture (WGC) API to automatically attach to `League of Legends (TM) Client`. Zero screen pickers, zero permissions dialogs, and seamless support for Windows Virtual Desktops.
+- **Hardware-Accelerated Encoding**: Direct H.264 MP4 encode via Windows Media Foundation with zero in-game frame rate drops.
+- **Hands-Free Lifecycle**: Starts silently when you load onto Summoner's Rift and finalizes automatically when the match concludes.
+- **100% Private**: All recordings are saved directly to your local drive (`%USERPROFILE%\Videos\LeagueStatTracker`). No video is ever uploaded.
+
+### 🎬 In-App VOD Review Player & Replay Hub
+- **Integrated Video Player**: Review your matches directly inside the app with timeline scrubbing, frame stepping, variable playback speed (0.5x–2.0x), and fullscreen mode.
+- **Smart Bookmarking**: Add timestamped notes during review to document clutch plays, death causes, and wave management mistakes.
+- **ROFL Replay Launcher**: Scans your local League replays folder and boots the League of Legends spectator client directly with one click.
+
+### ⚡ Live Match Radar & Face-Off
+- **Local Live Client Integration**: Connects securely to the local League client data stream (`https://127.0.0.1:2999/liveclientdata/allgamedata`) during active matches.
+- **10-Player Head-to-Head**: Real-time lane matchup telemetry featuring gold and level differentials, current item builds, active runes, and objective countdowns.
+
+### 📊 Deep Match Analytics & Forecaster
+- **Riot Match-V5 Telemetry**: Full historical parsing of recent games, KDA ratios, CS/min pace, vision scores, and kill maps.
+- **Rank & LP Trend Forecaster**: Visual MMR progression tracker and rank-up pace calculator.
+- **Damage Distribution**: High-fidelity charts breaking down physical, magic, and true damage output per match.
+
+---
+
+## 📥 Download & Installation
+
+Download the latest installer from the [Releases Page](https://github.com/LNewell00/LeagueStatTracker/releases/latest):
+
+| File | Description |
+| :--- | :--- |
+| **`LeagueStatTracker_0.2.0_x64-setup.exe`** | **Recommended**: Complete setup wizard with prerequisite checking (WebView2 & Visual C++ runtime) and desktop shortcut. |
+| **`LeagueStatTracker_0.2.0_x64_en-US.msi`** | Windows Installer Package (Enterprise / Group Policy friendly). |
+| **`league-stat-tracker-v0.2.0.exe`** | Standalone portable executable (no install required). |
+
+> **Note**: During setup, the installer verifies that Microsoft Edge WebView2 and the Visual C++ runtime are installed on your system.
+
+---
+
+## 🗺️ Roadmap to Version 1.0
+
+We are actively developing League Stat Tracker toward our official **v1.0.0 Milestone**. Here is what is planned before then:
+
+```
+v0.1.0 ──────────────► v0.2.0 ──────────────► v0.3.0 - v0.9.0 ──────────────► v1.0.0
+Live Radar             Native VOD Studio      In-Game HUD Overlay             Full Production
+Match-V5 Analytics     Review Player          Champion Deep-Dives             Commercial Release
+Rank Forecaster        Setup & Policies       Auto-Import & Themes
 ```
 
----
+### 🎯 Gameplay & HUD Overlays
+- [ ] **In-Game HUD Overlay**: Ultra-lightweight in-game overlay displaying live CS/min pacing, team gold differentials, and dragon/baron spawn timers.
+- [ ] **Side-Monitor Custom Build Helper**: Dedicated second-monitor workbench displaying situational item paths, counter-itemization recommendations, and ability level-up orders.
+- [ ] **Automatic Gameplay Highlight Clipper**: Smart clip generation engine that automatically cuts highlights for solo kills, multi-kills, baron steals, and game-winning teamfights.
 
-## 🛠️ Prerequisites
+### 🧠 Champion Mastery & Scouting
+- [ ] **Champion Explorer & Deep-Dive**: Lookup any champion to inspect tier rankings, win rates, ban rates, and counter matchups.
+- [ ] **Comparative Performance Engine**: Compare your champion stats directly against rank averages (e.g., your CS/min, vision score, and KDA vs Diamond average on the same champion).
+- [ ] **Predraft Champion Picker**: Draft phase assistant suggesting optimal synergy picks, hard counters, and strategic bans in Champion Select.
 
-Before running the application, make sure you have installed:
+### 🪄 Automation & Client Integration
+- [ ] **One-Click Auto-Import**: Automatically import the highest win-rate runes, item sets, and summoner spells directly into your League client via LCU.
 
-1. **Node.js (v18 or higher)**:
-   - Download from [nodejs.org](https://nodejs.org/), or via winget:
-     ```powershell
-     winget install OpenJS.NodeJS.LTS
-     ```
-
-2. **Rust & Cargo**:
-   - Install using [rustup.rs](https://rustup.rs/), or via winget:
-     ```powershell
-     winget install Rustlang.Rustup
-     ```
-   - Make sure you also have the **C++ Build Tools** installed (via Visual Studio Installer or `winget install Microsoft.VisualStudio.2022.BuildTools`).
+### 🎨 Personalization & Theming
+- [ ] **Theme Switcher**: Switch between built-in themes (Hextech Cyan, Riot Red, Void Purple, and Bilgewater Dark).
+- [ ] **Custom Theme Engine**: Create and share your own personalized color palettes, fonts, and UI layouts.
 
 ---
 
-## ⚙️ Setup & Installation
+## 🛠️ Development & Building from Source
 
-### 1. Configure Environment Variables
-Copy `.env.example` to `.env`:
-```powershell
-Copy-Item .env.example .env
-```
+### Prerequisites
+1. **Node.js**: v18.0 or higher ([Download](https://nodejs.org/))
+2. **Rust & Cargo**: Latest stable toolchain ([Install via rustup](https://rustup.rs/))
+3. **Visual Studio C++ Build Tools**: Required for native Windows compilation
 
-Open `.env` and set your Riot Developer API key:
-```env
-VITE_RIOT_API_KEY=RGAPI-your-actual-riot-api-key
-VITE_DEFAULT_GAME_NAME=Faker
-VITE_DEFAULT_TAG_LINE=KR1
-VITE_DEFAULT_REGION=kr
-```
-> **Note**: You can also enter and update your API key directly inside the app using the **Settings** modal at runtime without editing `.env`.
+### Quick Start
+```bash
+# 1. Clone the repository
+git clone https://github.com/LNewell00/LeagueStatTracker.git
+cd LeagueStatTracker
 
-### 2. Install Frontend Dependencies
-```powershell
+# 2. Install dependencies
 npm install
-```
 
----
-
-## 🖥️ Running the Application
-
-### Option A: Native Desktop App (Recommended)
-Launches the full Tauri v2 desktop application with the native Rust backend:
-```powershell
+# 3. Launch in development mode (with hot-reload)
 npm run tauri dev
 ```
-*On the first run, Cargo will download and compile Rust crates (reqwest, serde, tauri), which takes ~1-2 minutes.*
 
-### Option B: Fast Web Development Preview
-If you want to quickly preview and tweak UI styles in a standard web browser:
-```powershell
-npm run dev
+### Packaging Production Binaries
+```bash
+npm run tauri build
 ```
-Open `http://localhost:1420` in your browser. (The app will automatically use simulated mock data and browser storage fallbacks).
+Compiled setup executables and MSI installers will be created in `src-tauri/target/release/bundle/`.
 
 ---
 
-## 🔌 Riot API & Live Client Architecture
+## 🔒 Privacy & Compliance
 
-1. **Account-V1 (`/riot/account/v1/accounts/by-riot-id/{gameName}/{tagLine}`)**:
-   Translates modern Riot IDs with taglines into a unique `puuid`.
-
-2. **Match-V5 (`/lol/match/v5/matches/...`)**:
-   - Pulls recent match IDs: `/by-puuid/{puuid}/ids`
-   - Pulls comprehensive game info: `/{matchId}` (champion, spells, kills, deaths, assists, items 0–6, damage dealt, vision score, and win outcome).
-
-3. **Live Client Data (`https://127.0.0.1:2999/liveclientdata/allgamedata`)**:
-   - Polled every 3 seconds while League of Legends is running.
-   - Handled inside Rust via `reqwest::Client::builder().danger_accept_invalid_certs(true)` to bypass the self-signed certificate used by the League game client.
+- **Riot Games Developer Compliance**: League Stat Tracker operates strictly within Riot Games' Third-Party Guidelines. It does not inject code into the League client, read protected memory, or manipulate game files.
+- **Local Data Storage**: All match recordings, notes, and cache files stay on your machine. We do not track personal files or transmit video content to external servers.
 
 ---
 
 ## ⚖️ Legal Disclaimer
 
-League Stat Tracker is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
-
+League Stat Tracker isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc. League of Legends © Riot Games, Inc.
