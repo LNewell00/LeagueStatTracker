@@ -12,17 +12,11 @@ Unlike memory-heavy web overlays, League Stat Tracker is engineered to remain fa
 
 ---
 
-## 📥 Installation (For Players)
+## 📥 Installation
 
-Simply download and run the self-contained Windows setup executable:
+Download and run the latest Windows installer:
 
 👉 **[Download LeagueStatTracker_0.2.0_x64-setup.exe](https://github.com/LNewell00/LeagueStatTracker/releases/latest)**
-
-### 🚀 Zero Prerequisite Setup Required
-You do **not** need to install Node.js, Rust, Python, or manual dependencies.
-- **Self-Contained**: The `.exe` installer packages everything needed to run.
-- **Automatic Runtime Verification**: Automatically bundles the Visual C++ runtime components and verifies Microsoft Edge WebView2, ensuring smooth hardware-accelerated video playback.
-- **Convenience**: Creates a Start Menu entry and desktop shortcut. An interactive Terms & Policy agreement screen is displayed prior to installation.
 
 ---
 
