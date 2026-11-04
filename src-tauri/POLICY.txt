@@ -1,0 +1,24 @@
+LEAGUE STAT TRACKER - TERMS OF SERVICE & PRIVACY POLICY
+
+Welcome to League Stat Tracker! Please review the terms, software components, and privacy policies below before proceeding with the installation.
+
+1. COMPONENTS & PREREQUISITES INSTALLED
+By continuing this installation, the setup wizard will install:
+- League Stat Tracker Desktop Client (Release v0.2.0)
+- Desktop and Start Menu Shortcuts
+- Bundled Visual C++ Runtime Components (for native hardware game capture)
+- Microsoft Edge WebView2 Runtime verification (required for modern UI acceleration)
+
+2. RIOT GAMES COMPLIANCE & TELEMETRY
+- League Stat Tracker complies with the Riot Games Developer Terms and Conditions.
+- The application queries the League of Legends Live Client Data API (HTTPS localhost port 2999) only while an active match is in progress.
+- Public player statistics, ranked tiers, and match histories are retrieved securely via the official Riot Games Developer API.
+- League Stat Tracker does not inject code into the League of Legends executable, modify game files, or provide an unfair competitive advantage.
+
+3. VOD RECORDING & MEDIA PRIVACY
+- All automated match recordings (MP4/WebM video files) are encoded locally using your PC's hardware encoder (Windows Graphics Capture) and saved directly to your local Videos folder (%USERPROFILE%\Videos\LeagueStatTracker).
+- Your game recordings, audio, and personal files remain 100% private on your local storage. No video data is ever uploaded to external servers.
+
+4. USER CONSENT
+By clicking "I Agree", you acknowledge that you have read and accept these terms, and consent to the local installation and execution of League Stat Tracker.
+
