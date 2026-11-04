@@ -12,6 +12,20 @@ Unlike memory-heavy web overlays, League Stat Tracker is engineered to remain fa
 
 ---
 
+## 📥 Installation (For Players)
+
+Simply download and run the self-contained Windows setup executable:
+
+👉 **[Download LeagueStatTracker_0.2.0_x64-setup.exe](https://github.com/LNewell00/LeagueStatTracker/releases/latest)**
+
+### 🚀 Zero Prerequisite Setup Required
+You do **not** need to install Node.js, Rust, Python, or manual dependencies.
+- **Self-Contained**: The `.exe` installer packages everything needed to run.
+- **Automatic Runtime Verification**: Automatically bundles the Visual C++ runtime components and verifies Microsoft Edge WebView2, ensuring smooth hardware-accelerated video playback.
+- **Convenience**: Creates a Start Menu entry and desktop shortcut. An interactive Terms & Policy agreement screen is displayed prior to installation.
+
+---
+
 ## ✨ Features (v0.2.0)
 
 ### 🎥 Automated Native Match Recording Studio
@@ -33,20 +47,6 @@ Unlike memory-heavy web overlays, League Stat Tracker is engineered to remain fa
 - **Riot Match-V5 Telemetry**: Full historical parsing of recent games, KDA ratios, CS/min pace, vision scores, and kill maps.
 - **Rank & LP Trend Forecaster**: Visual MMR progression tracker and rank-up pace calculator.
 - **Damage Distribution**: High-fidelity charts breaking down physical, magic, and true damage output per match.
-
----
-
-## 📥 Download & Installation
-
-Download the latest installer from the [Releases Page](https://github.com/LNewell00/LeagueStatTracker/releases/latest):
-
-| File | Description |
-| :--- | :--- |
-| **`LeagueStatTracker_0.2.0_x64-setup.exe`** | **Recommended**: Complete setup wizard with prerequisite checking (WebView2 & Visual C++ runtime) and desktop shortcut. |
-| **`LeagueStatTracker_0.2.0_x64_en-US.msi`** | Windows Installer Package (Enterprise / Group Policy friendly). |
-| **`league-stat-tracker-v0.2.0.exe`** | Standalone portable executable (no install required). |
-
-> **Note**: During setup, the installer verifies that Microsoft Edge WebView2 and the Visual C++ runtime are installed on your system.
 
 ---
 
@@ -80,7 +80,9 @@ Rank Forecaster        Setup & Policies       Auto-Import & Themes
 
 ---
 
-## 🛠️ Development & Building from Source
+## 🛠️ Building from Source (For Developers Only)
+
+> *Regular players do not need this section. Download the ready-to-run setup executable above.*
 
 ### Prerequisites
 1. **Node.js**: v18.0 or higher ([Download](https://nodejs.org/))
@@ -98,13 +100,11 @@ npm install
 
 # 3. Launch in development mode (with hot-reload)
 npm run tauri dev
-```
 
-### Packaging Production Binaries
-```bash
+# 4. Package production NSIS setup installer (.exe)
 npm run tauri build
 ```
-Compiled setup executables and MSI installers will be created in `src-tauri/target/release/bundle/`.
+Compiled setup executables will be output to `src-tauri/target/release/bundle/nsis/`.
 
 ---
 
