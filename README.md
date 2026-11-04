@@ -16,7 +16,7 @@ Unlike memory-heavy web overlays, League Stat Tracker is engineered to remain fa
 
 Download and run the latest Windows installer:
 
-👉 **[Download LeagueStatTracker_0.2.0_x64-setup.exe](https://github.com/LNewell00/LeagueStatTracker/releases/latest)**
+**[Download LeagueStatTracker_0.2.0_x64-setup.exe](https://github.com/LNewell00/LeagueStatTracker/releases/latest)**
 
 ---
 
