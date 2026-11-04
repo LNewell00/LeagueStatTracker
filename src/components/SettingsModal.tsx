@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import { AppPreferences, savePreferences, clearLocalCache } from "../services/storage";
 import { X, Key, Trash2, ExternalLink, Check, RefreshCw, ArrowUpCircle, Download, Video } from "lucide-react";
 import { SUPPORTED_REGIONS } from "../types/riot";
@@ -35,6 +36,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [availableUpdate, setAvailableUpdate] = useState<any | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [appVersion, setAppVersion] = useState<string>("0.2.0");
+
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(() => {});
+  }, []);
 
   if (!isOpen) return null;
 
@@ -47,7 +53,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         setAvailableUpdate(result.updateHandle);
         setUpdateStatus(`New version v${result.version} is available!`);
       } else {
-        setUpdateStatus("You are running the latest version (v0.2.0).");
+        setUpdateStatus(`You are running the latest version (v${appVersion}).`);
       }
     } catch {
       setUpdateStatus("Could not reach update server. Check your connection.");
@@ -258,7 +264,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span>Version Distribution</span>
                 </div>
                 <div className="text-[10px] text-neutral-400">
-                  Build v0.2.1 • GitHub Releases Channel
+                  Build v{appVersion} • GitHub Releases Channel
                 </div>
               </div>
               <button
