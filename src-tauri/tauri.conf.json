@@ -39,7 +39,7 @@
   "plugins": {
     "opener": {},
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEwQjFGOUNBQkEyQUFBRkYKUldUL3FpcTZ5dm14RUo0WnJ2bU9UQTFUb3dCNUVJckRadzZoY1hJQkgrbTI5aEdCT0FOZ1kwdWwK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEFCRkNCMjMxRDgxQ0U3QjYKUldTMjV4ellNYkw4cStkdGRtWmhlK3A3Q0RiRUg4alVUVTdEeXVMdlhqVHhCWmJabENKVnYzWWEK",
       "endpoints": [
         "https://github.com/LNewell00/LeagueStatTracker/releases/latest/download/latest.json"
       ]
